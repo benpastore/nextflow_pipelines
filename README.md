@@ -64,20 +64,22 @@ When in the nextflow_pipelines directory the structure is as follows:
 In the modules directory (nextflow_pipelines/modules) each software (i.e. bowtie, trim_galore...) has its own directory associated with a min.nf
 file. 
 
+```
 ./modules 
-  \\|
-    bowtie
-      \\|
-      main.nf --> Associated processes
+  |
+  bowtie
+    |
+    main.nf --> Associated processes
       
 2. Workflows 
 Each workflow has its own names directory under workflows/. Each workflow has an associated run.sh script to run the associated pipeline.
 
 ./workflows
-  \\|
+  |
   chip
-    \\|
+    |
     run.sh
     main.nf
     nextflow.config
+```
 
