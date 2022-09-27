@@ -18,6 +18,8 @@ echo $PATH
 mv nextflow /usr/bin
 ```
 
+2. Install Singularity : https://docs.sylabs.io/guides/3.0/user-guide/installation.html#
+
 # *1. Usage*
 
 *git clone this repo*
