@@ -33,6 +33,9 @@ For instance in the nextflow.config file 'slurm' can be changed to 'sge' to use 
 
 A detailed list of executors can be found here : https://www.nextflow.io/docs/latest/executor.html
 
+4. For HPC users: must specify -profile cluster for jobs to be submitted to the cluster, some processes will still be executed locally.
+You must manually specify the cluster options in the nextflow.config file. 
+
 # *1. Usage*
 
 *git clone this repo*
