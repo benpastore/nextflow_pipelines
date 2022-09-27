@@ -65,18 +65,18 @@ In the modules directory (nextflow_pipelines/modules) each software (i.e. bowtie
 file. 
 
 ./modules 
-  \|
+  \\|
     bowtie
-      \|
+      \\|
       main.nf --> Associated processes
       
 2. Workflows 
 Each workflow has its own names directory under workflows/. Each workflow has an associated run.sh script to run the associated pipeline.
 
 ./workflows
-  \|
+  \\|
   chip
-    \|
+    \\|
     run.sh
     main.nf
     nextflow.config
