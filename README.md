@@ -2,7 +2,7 @@
 
 ## *Collection of pipelines used in RNA/DNA Genomics Analysis*
 
-# *0. Prerequisites*
+# *0. Prerequisites and General Info.*
 
 1. Download and install Nextflow: 
 ```
@@ -19,6 +19,19 @@ mv nextflow /usr/bin
 ```
 
 2. Install Singularity : https://docs.sylabs.io/guides/3.0/user-guide/installation.html#
+
+OR 
+
+Docker : https://docs.docker.com/engine/install/
+
+**IF using Docker over Singularity you must go into the nextflow.config file and specify docker.enabled = true**
+Otherwise the pipeline will try to use singularity container. As this pipeline was designed to run on a HPC 
+it was by default designed using singularity but can run with docker just as eaisly.
+
+3. The HPC management system I used when designing was SLURM, this can be changed howver by manipulating the executor of each process. 
+For instance in the nextflow.config file 'slurm' can be changed to 'sge' to use SGE executor.
+
+A detailed list of executors can be found here : https://www.nextflow.io/docs/latest/executor.html
 
 # *1. Usage*
 
