@@ -119,7 +119,7 @@ workflow {
      */
     if (params.bwa_build == true){
         BWA_INDEX( params.genome )
-        BWA_INDEX.out.tap{ bwa_index_ch }
+        BWA_INDEX.out.bwa_index_ch.tap{ bwa_index_ch }
     } else {
         bwa_index_ch = params.bwa_index 
     }

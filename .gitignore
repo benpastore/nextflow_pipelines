@@ -1,0 +1,7 @@
+*.sbatch
+*.img
+*.sif
+*.out
+
+singularity/
+index/

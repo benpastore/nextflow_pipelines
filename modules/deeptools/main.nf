@@ -1,6 +1,6 @@
 process BAM_COMPARE {
 
-    tag "${sampleID}_BAM_Compare"
+    tag "${ip}_vs_${control}_BAM_Compare"
 
     label 'high'
 
@@ -27,8 +27,7 @@ process BAM_COMPARE {
 
     bamCompare -b1 ${ip_bam} \\
         -b2 ${control_bam} \\
-        -o \$name.subtract.bw
-        -p ${task.cpus} \\
+        -o \$name_vs_${control}_compare.bw \\
         ${normalize} \\
         ${smooth} \\
         ${exact} \\
@@ -36,8 +35,6 @@ process BAM_COMPARE {
         ${filter_strand}
     """
 }
-
-
 
 process BAM_TO_BW {
 
