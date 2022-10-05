@@ -5,7 +5,7 @@ process STAR_INDEX {
 
     label 'high'
 
-    publishDir "$params.star_index", mode : 'copy'
+    publishDir "$params.star_index_path", mode : 'copy'
     
     input : 
         val genome
@@ -49,7 +49,15 @@ process STAR_ALIGN {
         path("*_Log.final.out")
 
     script : 
-    fastq_command = params.single_end ? "${fastq}" : "${fastq[0]} ${fastq[1]}"
+    fastq_command = params.single_end ? "--readFilesIn ${fastq}" : "--readFilesIn ${fastq[0]} ${fastq[1]}"
+    readFilesCommand = params.readFilesCommand ? "--readFilesCommand zcat" : ""
+    alignIntronMax_command = params.alignIntronMax ? "--alignIntronMax ${params.align_intron_max}" : "--alignIntronMax 10000"
+    outFilterMismatchNoverReadLmax_command = params.outFilterMismatchNoverReadLmax ? "--outFilterMismatchNoverReadLmax ${outFilterMismatchNoverReadLmax}" : "--outFilterMismatchNoverReadLmax 0.04"
+    outSAMtype_command = params.outSAMtype ? "--outSAMtype ${params.outSAMtype}" : "--outSAMtype BAM SortedByCoordinate"
+    outFilterType_command = params.outFilterType ? "--outFilterType ${params.outFilterType}" : "--outFilterType BySJout"
+    outFilterMultimapNmax_command = params.outFilterMultimapNmax ? "--outFilterMultimapNmax ${params.outFilterMultimapNmax}" : ""
+    outFilterIntronMotifs_command = params.outFilterIntronMotifs ? "--outFilterIntronMotifs ${params.outFilterIntronMotifs}" : "--outFilterIntronMotifs RemoveNoncanonical"
+    
     """
     #!/bin/bash
     
@@ -57,16 +65,16 @@ process STAR_ALIGN {
 
     STAR --genomeDir ${star_idx} \\
          --runThreadN ${task.cpus} \\
-         --outFilterMultimapNmax 999 \\
-         --outFilterType BySJout \\
-         --readFilesCommand zcat \\
-         --alignIntronMax 10000 \\
-         --outFileNamePrefix ${sampleID}_ \\
-         --outFilterMismatchNoverReadLmax 0.04 \\
-         --readFilesIn ${fastq_command} \\
-         --outSAMtype BAM SortedByCoordinate \\
-         --outFilterIntronMotifs RemoveNoncanonical
-    
+         ${outFilterMultimapNmax_command} \\
+         ${outFilterType_command} \\
+         ${gzip_command} \\
+         ${outFilterMismatchNoverReadLmax_command} \\
+         ${align_intron_max_command} \\
+         ${fastq_command} \\
+         ${outSAMtype_command} \\
+         ${outFilterIntronMotifs_command} \\
+         --outFileNamePrefix ${sampleID}_
+ 
     samtools index -@ 12 ${sampleID}_Aligned.sortedByCoord.out.bam
     """
 }

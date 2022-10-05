@@ -1,37 +1,50 @@
 #!/usr/bin/env nextflow
 
 /*
- * Set bool for single/paired end library
- */
-if (params.library == 'single'){
-    params.single_end = true
-} else {
-    params.single_end = false
-}   
+========================================================================================
+                         mRNA sequencing pipeline
+========================================================================================
+Ben Pastore
+pastore.28@osu.edu
+----------------------------------------------------------------------------------------
+*/
 
-/*
- * Set command for gene_ids
- */
-if (params.annotation.gene_ids == false) {
-    params.annotation.gene_ids = ""
-} else {
-    params.gene_ids = "-a ${params.annotation.gene_ids}"
+def helpMessage() {
+    log.info"""
+    Usage:
+    The typical command for running the pipeline is as follows:
+
+    nextflow main.nf -profile cluster --design design.csv 
+
+    Mandatory arguments:
+    --design [file]                     Comma-separated file containing information about the samples in the experiment (see docs/usage.md) (Default: './design.csv')
+    --results [file]                    Path to results directory
+    --single_end [bool]                 IF using single end sequencing must specify as true.
+    --outprefix [name]                  outprefix to be assigned to output files when necessary, default is "mRNA_analysis"
+    -profile [str]                      Configuration profile to use. Can use local / cluster
+    """.stripIndent()
 }
 
-/*
- * Set path to bin
- */
-params.bin = "${baseDir}/bin"
+// Show help message
+if (params.help) {
+    helpMessage()
+    exit 0
+}
+
+params.bin = "${params.base}/../../bin"
+params.index = "${params.base}/../../index"
 
 /*
- * Check if star genome exists
- */
-genome_fasta = file("${params.annotation.genome}")
+////////////////////////////////////////////////////////////////////
+Check star index is made
+////////////////////////////////////////////////////////////////////
+*/
+genome_fasta = file("${params.genome}")
 genome_name = "${genome_fasta.baseName}"
+params.star_index_path = "${params.index}/star/${genome_name}"
+params.star_index = "${params.star_index_path}"
 
-params.star_index = "${baseDir}/index/star/${genome_name}"
-star_path = file("${params.star_index}")
-star_exists = "${star_path.exists()}"
+star_exists = file(params.star_index_path).exists()
 
 if (star_exists == true){
     params.star_build = false
@@ -40,66 +53,87 @@ if (star_exists == true){
 }
 
 /*
- * Check if salmon index exists
- */
-if (params.salmon.run == true){
-    transcript_fasta = file("${params.salmon.reference}")
-    transcript_name = "${transcript_fasta.baseName}"
-    
-    params.salmon_index = "${baseDir}/index/salmon/${transcript_name}"
-    salmon_path = file("${params.salmon_index}")
-    salmon_exists = "${salmon_path.exists()}"
-    
+////////////////////////////////////////////////////////////////////
+Check salmon index is made
+////////////////////////////////////////////////////////////////////
+*/
+if (params.salmon) {
+
+    genome_fasta = file("${params.salmon}")
+    genome_name = "${genome_fasta.baseName}"
+    params.salmon_index_path = "${params.index}/salmon/${genome_name}"
+    params.salmon_index = "${params.salmon_index_path}/${genome_name}"
+
+    salmon_exists = file(params.salmon_index_path).exists()
+
     if (salmon_exists == true){
         params.salmon_build = false
     } else {
         params.salmon_build = true
     }
-} else {
-    params.salmon_build = false
+
 }
 
 /*
- * Enable dsl2 syntax
- */
+////////////////////////////////////////////////////////////////////
+Validate inputs
+////////////////////////////////////////////////////////////////////
+*/
+if (params.design)    { ch_design = file(params.design, checkIfExists: true) } else { exit 1, 'Design file not specified!' }
+if (params.genome)    { ch_genome = file(params.genome, checkIfExists: true) } else { exit 1, 'Genome fasta not specified!' }
+if (params.results)   { ; } else { exit 1, 'Results path not specified!' }
+if (params.outprefix) { ; } else { 'Outprefix not specified! Defaulting to mRNA_analysis' }
+
+/*
+////////////////////////////////////////////////////////////////////
+Enable dls2 language --> import modules
+////////////////////////////////////////////////////////////////////
+*/
 nextflow.enable.dsl=2
 
-/*
- * Import modules
- */
-include {
-    TRIM_GALORE;
-    FASTQC;
-    STAR_INDEX;
-    SALMON_INDEX;
-    STAR_ALIGN;
-    SALMON;
-    BAM_TO_BW;
-    COUNTER;
-    RBIND_COUNTS;
-    MASTER_TABLE;
-    MULTI_QC
-} from './modules.nf' 
+include { MRNA_SAMPLES_SHEET } from '../../modules/general/main.nf'
+include { TRIM_GALORE } from '../../modules/trimgalore/main.nf'
+include { FASTQC } from '../../modules/fastqc/main.nf'
+include { STAR_INDEX } from '../../modules/star/main.nf'
+include { STAR_ALIGN } from '../../modules/star/main.nf'
+include { FILTER_BAM } from '../../modules/picard/main.nf'
+include { PICARD_METRICS } from '../../modules/picard/main.nf'
+include { BAM_TO_BW } from '../../modules/deeptools/main.nf'
+include { MULTI_QC } from '../../modules/multiqc/main.nf'
+include { MERGE_BAM } from '../../modules/picard/main.nf'
+include { FILTER_BAM } from '../../modules/picard/main.nf'
+include { FEATURECOUNTS } from '../../modules/featurecounts/main.nf'
 
 /*
- * Pipeline logic
- */
+////////////////////////////////////////////////////////////////////
+Workflow
+////////////////////////////////////////////////////////////////////
+*/
 workflow {
 
-    /*
-     * Set reads channel
-     */
-    if (params.single_end == true){
-        reads = Channel.fromPath( params.reads ).ifEmpty{ error "No reads in reads directory" }.map { file -> tuple(file.simpleName, file) }
+    MRNA_SAMPLES_SHEET( params.design )
+
+    if (params.single_end == false ){
+        reads_ch = MRNA_SAMPLES_SHEET.out.fq_ch
+            .splitCsv(header:true, sep:',')
+            .map { row -> [ row.simple_name, [ file(row.R1,checkIfExists: true), file(row.R2,checkIfExists: true) ] ] }
+            
     } else {
-        reads = Channel.fromFilePairs( params.reads ).ifEmpty{ error "No reads in reads directory" }
+        reads_ch = MRNA_SAMPLES_SHEET.out.fq_ch
+            .splitCsv(header:true, sep:',')
+            .map { row -> [ row.simple_name, file(row.R1,checkIfExists: true) ] }
+            
     }
+    
+    replicates_ch = MRNA_SAMPLES_SHEET.out.replicates_ch
+        .splitCsv(header:true, sep:',')
+        .map { row -> [ row.simple_name, row.group ] }
 
     /*
      * Trim reads of adapters and low quality sequences
      */
     TRIM_GALORE( reads )
-    TRIM_GALORE.out.fq_ch.tap{ fq_ch }
+    fq_ch = TRIM_GALORE.out.fq_ch
     
     /*
      * Preform FASTQC on raw reads
@@ -111,15 +145,39 @@ workflow {
      * 1. Build star index if necessary
      * 2. Preform alignment
      */
-    if (params.star_build == true){
-        STAR_INDEX ( params.annotation.genome, params.annotation.gtf)
-        STAR_INDEX.out.star_idx_ch.tap{ star_idx_ch }
+    if ( params.star_build ){
+        STAR_INDEX ( params.genome, params.gtf)
+        star_idx_ch = STAR_INDEX.out.star_idx_ch
     } else {
         star_idx_ch = star_path
     }
     
-    STAR_ALIGN(star_idx_ch, params.annotation.gtf, fq_ch)
-    STAR_ALIGN.out.star_bams_ch.tap{ bams }
+    STAR_ALIGN(star_idx_ch, params.gtf, fq_ch)
+
+    bam_ch = STAR_ALIGN.out.star_bams_ch
+
+    /*
+     * Filter STAR alignment
+     */
+    FILTER_BAM( bam_ch )
+
+    filter_bam_ch = FILTER_BAM.out.filtered_bams_ch
+
+    merge_bams = filter_bam_ch
+        .join(replicates_ch)
+        .groupTuple(by:2)
+
+    /*
+     * Merge BAM files 
+     * Some code used and inspired from https://github.com/nf-core/chipseq
+     */
+    MERGE_BAM( merge_bams )
+
+    /*
+     * BAM --> BW using deeptools bam coverage
+     */
+    merged_bams = MERGE_BAM.out.merged_bams_ch
+    BAM_TO_BW( merged_bams )
 
     /*
      * SALMON Alignment
@@ -127,54 +185,51 @@ workflow {
      * 2. Build samlmon index if necessary
      * 3. Preform salmon mapping 
      */
-    if (params.salmon.run == true){
-        if (params.salmon_build == true){
-            SALMON_INDEX ( params.salmon.reference )
-            SALMON_INDEX.out.salmon_idx_ch.tap{ salmon_idx_ch }
+    if ( params.salmon ){
+        if ( params.salmon_build ){
+            SALMON_INDEX ( params.salmon )
+            salmon_idx_ch = SALMON_INDEX.out.salmon_idx_ch
         } else {
             salmon_idx_ch = salmon_path
         }
-    }
 
-    if (params.salmon.run == true){
         SALMON( salmon_idx_ch, fq_ch )
-        SALMON.out.salmon_quant_ch.tap{ salmon_quant_ch }
+        salmon_quant_ch = SALMON.out.salmon_quant_ch
     }
-
-    /*
-     * BAM --> BW using deeptools bam coverage
-     */
-    BAM_TO_BW( bams )
 
     /*
      * Feature Counts
      */
-    COUNTER( bams, params.annotation.gtf )
-    COUNTER.out.feature_counts_ch.tap{ feature_counts_ch }
+    FEATURECOUNTS( filter_bam_ch, params.gtf )
+    feature_counts_ch = FEATURECOUNTS.out.feature_counts_ch
     
     /*
      * Join counts table from salmon + feature counts, if neccesary 
      */
-    if (params.salmon.run == true) {
-        feature_counts_ch.join(salmon_quant_ch).tap{ counts_ch }
+    if (params.salmon) {
+        counts_ch = feature_counts_ch.join(salmon_quant_ch)
+
         RBIND_COUNTS( counts_ch )
-        RBIND_COUNTS.out.counts_ch.tap{ master_table_input }
+        
+        master_table_input = RBIND_COUNTS.out.counts_ch
+    
     } else {
         master_table_input = feature_counts_ch
+    
     }
 
+    params.project_name = params.outprefix ? "${params.outprefix}" : "mRNA_analysis"
     /*
      * Make master table
      */
     MASTER_TABLE(
-        params.project.name,
+        params.project_name,
         master_table_input.collect(),
-        params.gene_ids
     )
     
     /*
      * MultiQC
      */
-    MULTI_QC(MASTER_TABLE.out.master_tables_ch, params.results )
+    MULTI_QC( params.results )
 
 }

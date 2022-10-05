@@ -1,4 +1,4 @@
-process FILTER_MERGE_BAM {
+process FILTER_BAM {
 
     tag "${condition}_filter_merge_bam"
 

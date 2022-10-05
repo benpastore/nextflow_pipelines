@@ -2,6 +2,8 @@
 *.img
 *.sif
 *.out
+*.nextflow*
 
 singularity/
 index/
+.nextflow/
