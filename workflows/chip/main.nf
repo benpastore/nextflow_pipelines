@@ -59,7 +59,7 @@ Validate inputs
 if (params.design)    { ch_design = file(params.design, checkIfExists: true) } else { exit 1, 'Design file not specified!' }
 if (params.genome)    { ch_genome = file(params.genome, checkIfExists: true) } else { exit 1, 'Genome fasta not specified!' }
 if (params.results)   { ; } else { exit 1, 'Results path not specified!' }
-if (params.outprefix) { ; } else { 'Outprefix not specified! Defaulting to CHIP_analysis' }
+if (params.outprefix) { ; } else { 'Outprefix not specified! Defaulting to CHIP_analysis'; params.outprefix = "CHIP_analysis" }
 
 /*
 ////////////////////////////////////////////////////////////////////
@@ -68,7 +68,7 @@ Enable dls2 language --> import modules
 */
 nextflow.enable.dsl=2
 
-include { CHIP_SAMPLES_SHEET } from '../../modules/chip_samples_sheet/main.nf'
+include { CHIP_SAMPLES_SHEET } from '../../modules/general/main.nf'
 include { TRIM_GALORE } from '../../modules/trimgalore/main.nf'
 include { FASTQC } from '../../modules/fastqc/main.nf'
 include { BWA_INDEX } from '../../modules/bwa/main.nf'
@@ -80,6 +80,7 @@ include { MACS2 } from '../../modules/macs2/main.nf'
 include { BAM_TO_BW } from '../../modules/deeptools/main.nf'
 include { BAM_COMPARE } from '../../modules/deeptools/main.nf'
 include { MULTI_QC } from '../../modules/multiqc/main.nf'
+include { CHIP_INTERSECT } from '../../modules/bedtools/main.nf'
 
 /*
 ////////////////////////////////////////////////////////////////////
@@ -167,7 +168,7 @@ workflow {
     /*
      * BAM --> BW
      */
-    BAM_TO_BW( FILTER_MERGE_BAM.out.bam_to_bw_input )
+    BAM_TO_BW( FILTER_BAM.out.bam_to_bw_input )
 
     /*
      * MACS2
@@ -178,6 +179,16 @@ workflow {
      * BAM Compare
      */
     BAM_COMPARE( bam_compare_ch )
+
+    /*
+     * intersect bam to peaks
+     */
+    peaks_ch = MACS2.out.macs2_peaks_ch
+    
+    peak_intersect_ch = filtered_bams_ch
+        .join(peaks_ch)
+    
+    CHIP_INTERSECT( peak_intersect_ch )
 
     /*
      * Picard metrics

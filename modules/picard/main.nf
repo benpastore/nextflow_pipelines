@@ -53,7 +53,7 @@ process MERGE_BAM {
 
     tag "${condition}_merge_bams"
 
-    label 'high'
+    label 'extra_high'
 
     publishDir "$params.results/merged/bam", mode : 'copy', pattern : '*.bam'
     publishDir "$params.results/merged/bam", mode : 'copy', pattern : '*.bai'

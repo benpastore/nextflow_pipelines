@@ -1,0 +1,9 @@
+condition,replicate,R1,R2,antibody,control
+attf6,1,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/CHIP_fastq/attf6_1F_CKDL220021642-1A_HJ2YTBBXX_L2_1.fq.gz,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/CHIP_fastq/attf6_1F_CKDL220021642-1A_HJ2YTBBXX_L2_2.fq.gz,flag,why354
+attf6,2,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/CHIP_fastq/attf6_2F_CKDL220021642-1A_HJ2YTBBXX_L2_1.fq.gz,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/CHIP_fastq/attf6_2F_CKDL220021642-1A_HJ2YTBBXX_L2_2.fq.gz,flag,why354
+m01,1,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/CHIP_fastq/M01G5_1F_CKDL220021642-1A_HJ2YTBBXX_L2_1.fq.gz,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/CHIP_fastq/M01G5_1F_CKDL220021642-1A_HJ2YTBBXX_L2_2.fq.gz,flag,why354
+m01,2,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/CHIP_fastq/M01G5_2F_CKDL220021642-1A_HJ2YTBBXX_L2_1.fq.gz,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/CHIP_fastq/M01G5_2F_CKDL220021642-1A_HJ2YTBBXX_L2_2.fq.gz,flag,why354
+tofu5,1,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/CHIP_fastq/TOFU5_1F_CKDL220021642-1A_HJ2YTBBXX_L2_1.fq.gz,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/CHIP_fastq/TOFU5_1F_CKDL220021642-1A_HJ2YTBBXX_L2_2.fq.gz,flag,why354
+tofu5,2,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/CHIP_fastq/TOFU5_2F_CKDL220021642-1A_HJ2YTBBXX_L2_1.fq.gz,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/CHIP_fastq/TOFU5_2F_CKDL220021642-1A_HJ2YTBBXX_L2_2.fq.gz,flag,why354
+why354,1,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/CHIP_fastq/WHY354_1F_CKDL220021642-1A_HJ2YTBBXX_L2_1.fq.gz,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/CHIP_fastq/WHY354_1F_CKDL220021642-1A_HJ2YTBBXX_L2_2.fq.gz,flag,why354
+why354,2,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/CHIP_fastq/WHY354_2F_CKDL220021642-1A_HJ2YTBBXX_L2_1.fq.gz,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/CHIP_fastq/WHY354_2F_CKDL220021642-1A_HJ2YTBBXX_L2_2.fq.gz,flag,why354

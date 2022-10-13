@@ -13,7 +13,7 @@ process BAM_COMPARE {
         path("*bw"), emit : bws_ch
     
     script :
-    normalize = params.normalize_bw ? "--normalizeUsing ${params.normalize_bw}" : '--normalizeUsing RPKM'
+    normalize = params.normalize_bw ? "--normalizeUsing ${params.normalize_bw} --scaleFactorsMethod None" : '--normalizeUsing RPKM --scaleFactorsMethod None'
     smooth = params.smooth_length ? "--smoothLength ${params.smooth_length}" : '--smoothLength 10' 
     exact = params.exact_scaling ? "--exactScaling" : ''
     filter_strand = params.filter_strand ? '--filterRNAstrand forward' : ''
@@ -21,13 +21,18 @@ process BAM_COMPARE {
     """
     #!/bin/bash
 
+    source activate rnaseq
+
+    samtools index -@ ${task.cpus} ${ip_bam}
+    samtools index -@ ${task.cpus} ${control_bam}
+
     source activate DeepTools
 
     name=\$(basename ${ip_bam} .bam)
 
     bamCompare -b1 ${ip_bam} \\
         -b2 ${control_bam} \\
-        -o \$name_vs_${control}_compare.bw \\
+        -o ${ip}_vs_${control}_compare.bw \\
         ${normalize} \\
         ${smooth} \\
         ${exact} \\

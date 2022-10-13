@@ -4,14 +4,14 @@ process SALMON_INDEX {
 
     label 'medium'
 
-    publishDir "$params.salmon_index", mode : 'copy', pattern : "*"
+    publishDir "$params.salmon_index_path", mode : 'copy'
 
     input : 
         val transcripts
     
     output : 
         path("*")
-        val("${params.salmon_index}"), emit : salmon_idx_ch
+        val("${params.salmon_index_path}"), emit : salmon_idx_ch
     
     script : 
     """

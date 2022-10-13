@@ -13,7 +13,7 @@ process STAR_INDEX {
     
     output : 
         path("*")
-        val("${params.star_index}"), emit : star_idx_ch
+        val("${params.star_index_path}"), emit : star_idx_ch
 
     script : 
     """
@@ -50,9 +50,9 @@ process STAR_ALIGN {
 
     script : 
     fastq_command = params.single_end ? "--readFilesIn ${fastq}" : "--readFilesIn ${fastq[0]} ${fastq[1]}"
-    readFilesCommand = params.readFilesCommand ? "--readFilesCommand zcat" : ""
-    alignIntronMax_command = params.alignIntronMax ? "--alignIntronMax ${params.align_intron_max}" : "--alignIntronMax 10000"
-    outFilterMismatchNoverReadLmax_command = params.outFilterMismatchNoverReadLmax ? "--outFilterMismatchNoverReadLmax ${outFilterMismatchNoverReadLmax}" : "--outFilterMismatchNoverReadLmax 0.04"
+    readFilesCommand = params.readFilesCommand ? "--readFilesCommand ${params.readFilesCommand}" : ""
+    alignIntronMax_command = params.alignIntronMax ? "--alignIntronMax ${params.alignIntronMax}" : "--alignIntronMax 10000"
+    outFilterMismatchNoverReadLmax_command = params.outFilterMismatchNoverReadLmax ? "--outFilterMismatchNoverReadLmax ${params.outFilterMismatchNoverReadLmax}" : "--outFilterMismatchNoverReadLmax 0.04"
     outSAMtype_command = params.outSAMtype ? "--outSAMtype ${params.outSAMtype}" : "--outSAMtype BAM SortedByCoordinate"
     outFilterType_command = params.outFilterType ? "--outFilterType ${params.outFilterType}" : "--outFilterType BySJout"
     outFilterMultimapNmax_command = params.outFilterMultimapNmax ? "--outFilterMultimapNmax ${params.outFilterMultimapNmax}" : ""
@@ -65,13 +65,13 @@ process STAR_ALIGN {
 
     STAR --genomeDir ${star_idx} \\
          --runThreadN ${task.cpus} \\
-         ${outFilterMultimapNmax_command} \\
-         ${outFilterType_command} \\
-         ${gzip_command} \\
-         ${outFilterMismatchNoverReadLmax_command} \\
-         ${align_intron_max_command} \\
          ${fastq_command} \\
+         ${readFilesCommand} \\
+         ${alignIntronMax_command} \\
+         ${outFilterMismatchNoverReadLmax_command} \\
          ${outSAMtype_command} \\
+         ${outFilterType_command} \\
+         ${outFilterMultimapNmax_command} \\
          ${outFilterIntronMotifs_command} \\
          --outFileNamePrefix ${sampleID}_
  

@@ -11,7 +11,6 @@ def process_design(file) :
     # make csv for fastq channel
     df['simple_name'] = df.apply(lambda row: os.path.basename(row['R1']).split(".")[0], axis = 1)
     df['group'] = df.apply(lambda row: f"{row['condition']}", axis = 1)
-    df['control_group'] = df.apply(lambda row: f"{row['control']}", axis = 1)
 
     fastq = df[['simple_name', 'R1', 'R2']]
 

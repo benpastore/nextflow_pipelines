@@ -4,7 +4,6 @@ process MACS2 {
 
     label 'medium'
 
-    publishDir "$params.results/MACS2/log", mode: 'copy', pattern : "*log"
     publishDir "$params.results/MACS2/peaks", mode: 'copy', pattern : "*narrowPeak"
     publishDir "$params.results/MACS2/summits", mode: 'copy', pattern : "*summits.bed"
 
@@ -12,9 +11,9 @@ process MACS2 {
         tuple val(ip), path(ip_bam), val(control), path(control_bam)
     
     output : 
-        path("*log")
         path("*Peak")
         path("*bed")
+        tuple val(ip), path("${ip}_peaks.narrowPeak"), emit : macs2_peaks_ch
 
     script : 
     broad = params.narrow_peak ? '' : "--broad --broad-cutoff ${params.broad_cutoff}"

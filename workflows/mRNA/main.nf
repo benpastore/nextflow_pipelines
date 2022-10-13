@@ -62,7 +62,7 @@ if (params.salmon) {
     genome_fasta = file("${params.salmon}")
     genome_name = "${genome_fasta.baseName}"
     params.salmon_index_path = "${params.index}/salmon/${genome_name}"
-    params.salmon_index = "${params.salmon_index_path}/${genome_name}"
+    params.salmon_index = "${params.salmon_index_path}"
 
     salmon_exists = file(params.salmon_index_path).exists()
 
@@ -95,14 +95,17 @@ include { MRNA_SAMPLES_SHEET } from '../../modules/general/main.nf'
 include { TRIM_GALORE } from '../../modules/trimgalore/main.nf'
 include { FASTQC } from '../../modules/fastqc/main.nf'
 include { STAR_INDEX } from '../../modules/star/main.nf'
+include { SALMON_INDEX } from '../../modules/salmon/main.nf'
+include { SALMON } from '../../modules/salmon/main.nf'
 include { STAR_ALIGN } from '../../modules/star/main.nf'
-include { FILTER_BAM } from '../../modules/picard/main.nf'
 include { PICARD_METRICS } from '../../modules/picard/main.nf'
 include { BAM_TO_BW } from '../../modules/deeptools/main.nf'
 include { MULTI_QC } from '../../modules/multiqc/main.nf'
 include { MERGE_BAM } from '../../modules/picard/main.nf'
 include { FILTER_BAM } from '../../modules/picard/main.nf'
 include { FEATURECOUNTS } from '../../modules/featurecounts/main.nf'
+include { RBIND_COUNTS } from '../../modules/general/main.nf'
+include { MASTER_TABLE } from '../../modules/general/main.nf'
 
 /*
 ////////////////////////////////////////////////////////////////////
@@ -132,13 +135,13 @@ workflow {
     /*
      * Trim reads of adapters and low quality sequences
      */
-    TRIM_GALORE( reads )
+    TRIM_GALORE( reads_ch )
     fq_ch = TRIM_GALORE.out.fq_ch
     
     /*
      * Preform FASTQC on raw reads
      */
-    FASTQC( reads )
+    FASTQC( reads_ch )
 
     /*
      * STAR Alignment.
@@ -149,7 +152,7 @@ workflow {
         STAR_INDEX ( params.genome, params.gtf)
         star_idx_ch = STAR_INDEX.out.star_idx_ch
     } else {
-        star_idx_ch = star_path
+        star_idx_ch = params.star_index_path
     }
     
     STAR_ALIGN(star_idx_ch, params.gtf, fq_ch)
@@ -190,7 +193,7 @@ workflow {
             SALMON_INDEX ( params.salmon )
             salmon_idx_ch = SALMON_INDEX.out.salmon_idx_ch
         } else {
-            salmon_idx_ch = salmon_path
+            salmon_idx_ch = params.salmon_index_path
         }
 
         SALMON( salmon_idx_ch, fq_ch )
@@ -226,10 +229,7 @@ workflow {
         params.project_name,
         master_table_input.collect(),
     )
-    
-    /*
-     * MultiQC
-     */
-    MULTI_QC( params.results )
 
 }
+
+

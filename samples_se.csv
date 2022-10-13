@@ -1,0 +1,17 @@
+condition,replicate,R1,R2,antibody,control
+prde1,1,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/miska_CHIP/fastq/PRDE1_1.fastq,NA,flag,WT
+prde1,2,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/miska_CHIP/fastq/PRDE1_2.fastq,NA,flag,WT
+snpc4,1,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/miska_CHIP/fastq/SNPC4_1.fastq,NA,flag,WT
+snpc4,2,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/miska_CHIP/fastq/SNPC4_2.fastq,NA,flag,WT
+tofu4,1,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/miska_CHIP/fastq/TOFU4_1.fastq,NA,flag,WT
+tofu4,2,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/miska_CHIP/fastq/TOFU4_2.fastq,NA,flag,WT
+tofu5,1,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/miska_CHIP/fastq/TOFU5_1.fastq,NA,flag,WT
+tofu5,2,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/miska_CHIP/fastq/TOFU5_2.fastq,NA,flag,WT
+WT,1,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/miska_CHIP/fastq/WT_1.fastq,NA,flag,
+WT,2,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/miska_CHIP/fastq/WT_2.fastq,NA,flag,
+WT,3,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/miska_CHIP/fastq/WT_3.fastq,NA,flag,
+WT,4,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/miska_CHIP/fastq/WT_4.fastq,NA,flag,
+WT,5,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/miska_CHIP/fastq/WT_5.fastq,NA,flag,
+WT,6,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/miska_CHIP/fastq/WT_6.fastq,NA,flag,
+WT,7,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/miska_CHIP/fastq/WT_7.fastq,NA,flag,
+WT,8,/fs/ess/PCON0160/ben/projects/piRNA_biogenesis/miska_CHIP/fastq/WT_8.fastq,NA,flag,

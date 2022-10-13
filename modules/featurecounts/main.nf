@@ -10,7 +10,7 @@ process FEATURECOUNTS {
     publishDir "$params.results/counts/feature_counts", mode: 'copy', pattern : "*.tsv"
 
     input :
-        tuple val(sampleID), path(bam), path(bai)
+        tuple val(sampleID), path(bam)
         val gtf
 
     output :
@@ -25,7 +25,7 @@ process FEATURECOUNTS {
     gene_id_command = params.identifier ? "-g ${params.identifier}" : "-g gene_id"
     feature_command = params.feature ? "-t ${params.feature}" : "-t exon"
     multimap_command = params.count_multimappers ? "-M" : ""
-    fraction_command = params.fraction_counts ? "−−fraction" : ""
+    fraction_command = params.fraction_counts ? "--fraction" : ""
     """
     #!/bin/bash
 
