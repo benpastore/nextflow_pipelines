@@ -43,6 +43,7 @@ genome_fasta = file("${params.genome}")
 genome_name = "${genome_fasta.baseName}"
 params.star_index_path = "${params.index}/star/${genome_name}"
 params.star_index = "${params.star_index_path}"
+params.star_chrom_sizes = "${params.star_index_path}/chrNameLength.txt"
 
 star_exists = file(params.star_index_path).exists()
 
@@ -100,9 +101,10 @@ include { SALMON } from '../../modules/salmon/main.nf'
 include { STAR_ALIGN } from '../../modules/star/main.nf'
 include { PICARD_METRICS } from '../../modules/picard/main.nf'
 include { BAM_TO_BW } from '../../modules/deeptools/main.nf'
+include { MERGE_BW } from '../../modules/deeptools/main.nf'
 include { MULTI_QC } from '../../modules/multiqc/main.nf'
 include { MERGE_BAM } from '../../modules/picard/main.nf'
-include { FILTER_BAM } from '../../modules/picard/main.nf'
+include { FILTER_BAM } from '../../modules/samtools/main.nf'
 include { FEATURECOUNTS } from '../../modules/featurecounts/main.nf'
 include { RBIND_COUNTS } from '../../modules/general/main.nf'
 include { MASTER_TABLE } from '../../modules/general/main.nf'
@@ -171,16 +173,28 @@ workflow {
         .groupTuple(by:2)
 
     /*
-     * Merge BAM files 
-     * Some code used and inspired from https://github.com/nf-core/chipseq
-     */
-    MERGE_BAM( merge_bams )
-
-    /*
      * BAM --> BW using deeptools bam coverage
      */
-    merged_bams = MERGE_BAM.out.merged_bams_ch
-    BAM_TO_BW( merged_bams )
+    bam_to_bw_ch = FILTER_BAM
+        .out
+        .bam_to_bw_input
+
+    BAM_TO_BW( bam_to_bw_ch )
+
+    /*
+     * Merge BW files for a given condition
+     */
+    if ( params.merge_bw ){
+
+        merge_bws = BAM_TO_BW
+            .out
+            .bws_ch
+            .join(replicates_ch)
+            .groupTuple(by:2)
+
+        MERGE_BW(merge_bws, params.star_chrom_sizes)
+    
+    }
 
     /*
      * SALMON Alignment

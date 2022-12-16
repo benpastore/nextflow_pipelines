@@ -73,9 +73,9 @@ process STAR_ALIGN {
          ${outFilterType_command} \\
          ${outFilterMultimapNmax_command} \\
          ${outFilterIntronMotifs_command} \\
-         --outFileNamePrefix ${sampleID}_
+         --outFileNamePrefix ${sampleID}.
  
-    samtools index -@ 12 ${sampleID}_Aligned.sortedByCoord.out.bam
+    samtools index -@ 12 ${sampleID}.Aligned.sortedByCoord.out.bam
     """
 }
 

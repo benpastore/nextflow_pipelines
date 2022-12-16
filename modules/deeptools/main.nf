@@ -13,7 +13,7 @@ process BAM_COMPARE {
         path("*bw"), emit : bws_ch
     
     script :
-    normalize = params.normalize_bw ? "--normalizeUsing ${params.normalize_bw} --scaleFactorsMethod None" : '--normalizeUsing RPKM --scaleFactorsMethod None'
+    normalize = params.normalize_bw ? "--normalizeUsing ${params.normalize_bw} --scaleFactorsMethod None" : '--normalizeUsing CPM --scaleFactorsMethod None'
     smooth = params.smooth_length ? "--smoothLength ${params.smooth_length}" : '--smoothLength 10' 
     exact = params.exact_scaling ? "--exactScaling" : ''
     filter_strand = params.filter_strand ? '--filterRNAstrand forward' : ''
@@ -56,11 +56,11 @@ process BAM_TO_BW {
         tuple val(sampleID), path("*bw"), emit : bws_ch
     
     script :
-    normalize = params.normalize_bw ? "--normalizeUsing ${params.normalize_bw}" : '--normalizeUsing RPKM'
+    normalize = params.normalize_bw ? "--normalizeUsing ${params.normalize_bw}" : '--normalizeUsing CPM'
     smooth = params.smooth_length ? "--smoothLength ${params.smooth_length}" : '--smoothLength 10' 
     exact = params.exact_scaling ? "--exactScaling" : ''
     filter_strand = params.filter_strand ? '--filterRNAstrand forward' : ''
-    bin_size = params.bin_size ? "--binSize ${params.bin_size}" : '--binSize 10'
+    bin_size = params.bin_size ? "--binSize ${params.bin_size}" : '--binSize 5'
     """
     #!/bin/bash
 
@@ -78,4 +78,43 @@ process BAM_TO_BW {
         ${bin_size}
         
     """
+}
+
+process MERGE_BW {
+
+    tag "${condition}_merge_bw"
+
+    label 'high'
+
+    publishDir "$params.results/merge_BigWig", mode: 'copy', pattern : "*.bw"
+
+    input : 
+        tuple val(sampleIDs), path(bws), val(condition)
+        val chrom_sizes
+
+    output : 
+        tuple val(condition), path("*.bw")
+    
+    script : 
+    """
+    #!/bin/bash
+
+    source activate rnaseq
+
+    # make array with bigwigs 
+    bws=\$(${bws.join(' ')})
+
+    # get length of array
+    N_bw=\${#bws[@]}
+
+    # merge bigwig(s) --> bedgraph
+    bigWigMerge \$bws ${condition}.tmp
+
+    # divide counts column by N samples to average
+    cat ${condition}.tmp | awk -F'\\t' -v OFS='\\t' -v nsamp=\$N_bw '{ print \$1,\$2,\$3,\$4/nsamp }' > ${condition}.bedGraph
+
+    # convert bedGraph --> bigwig
+    bedGraphToBigWig ${condition}.bedGraph ${chrom_sizes} ${condition}.bw
+    """
+
 }
