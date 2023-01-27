@@ -151,7 +151,7 @@ workflow {
      * 2. Preform alignment
      */
     if ( params.star_build ){
-        STAR_INDEX ( params.genome, params.gtf)
+        STAR_INDEX ( params.genome, params.gtf, params.star_index_path)
         star_idx_ch = STAR_INDEX.out.star_idx_ch
     } else {
         star_idx_ch = params.star_index_path

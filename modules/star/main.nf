@@ -5,11 +5,12 @@ process STAR_INDEX {
 
     label 'high'
 
-    publishDir "$params.star_index_path", mode : 'copy'
+    //publishDir "$params.star_index_path", mode : 'copy'
     
     input : 
         val genome
         val gtf
+        val genome_dir
     
     output : 
         path("*")
@@ -22,10 +23,10 @@ process STAR_INDEX {
     source activate rnaseq
     
     STAR --runMode genomeGenerate \\
-         --genomeDir \$PWD \\
          --genomeFastaFiles ${genome} \\
          --sjdbGTFfile ${gtf} \\
-         --runThreadN ${task.cpus}
+         --runThreadN ${task.cpus} \\
+         --genomeDir ${genome_dir}
     """
 }
 
@@ -37,7 +38,7 @@ process STAR_ALIGN {
 
     publishDir "$params.results/star_alignments/bam", mode : 'copy', pattern : '*.bam'
     publishDir "$params.results/star_alignments/bam", mode : 'copy', pattern : '*.bai'
-    publishDir "$params.results/star_alignments/logs", mode : 'copy', pattern : '*_Log.final.out'
+    publishDir "$params.results/star_alignments/logs", mode : 'copy', pattern : '*Log.final.out'
 
     input : 
         val star_idx
@@ -45,8 +46,8 @@ process STAR_ALIGN {
         tuple val(sampleID), val(fastq)
     
     output :
-        tuple val(sampleID), path("${sampleID}_Aligned.sortedByCoord.out.bam"), path("${sampleID}_Aligned.sortedByCoord.out.bam.bai"), emit : star_bams_ch
-        path("*_Log.final.out")
+        tuple val(sampleID), path("${sampleID}.Aligned.sortedByCoord.out.bam"), path("${sampleID}.Aligned.sortedByCoord.out.bam.bai"), emit : star_bams_ch
+        path("*Log.final.out")
 
     script : 
     fastq_command = params.single_end ? "--readFilesIn ${fastq}" : "--readFilesIn ${fastq[0]} ${fastq[1]}"
@@ -55,9 +56,8 @@ process STAR_ALIGN {
     outFilterMismatchNoverReadLmax_command = params.outFilterMismatchNoverReadLmax ? "--outFilterMismatchNoverReadLmax ${params.outFilterMismatchNoverReadLmax}" : "--outFilterMismatchNoverReadLmax 0.04"
     outSAMtype_command = params.outSAMtype ? "--outSAMtype ${params.outSAMtype}" : "--outSAMtype BAM SortedByCoordinate"
     outFilterType_command = params.outFilterType ? "--outFilterType ${params.outFilterType}" : "--outFilterType BySJout"
-    outFilterMultimapNmax_command = params.outFilterMultimapNmax ? "--outFilterMultimapNmax ${params.outFilterMultimapNmax}" : ""
     outFilterIntronMotifs_command = params.outFilterIntronMotifs ? "--outFilterIntronMotifs ${params.outFilterIntronMotifs}" : "--outFilterIntronMotifs RemoveNoncanonical"
-    
+    outFilterMultimapNmax_command = params.outFilterMultimapNmax ? "--outFilterMultimapNmax ${params.outFilterMultimapNmax}" : "--outFilterMultimapNmax 20"
     """
     #!/bin/bash
     
