@@ -80,6 +80,42 @@ process BAM_TO_BW {
     """
 }
 
+process BW_COMPARE {
+
+    tag "${ip}_vs_${control}_MACS2"
+
+    label 'high'
+
+    publishDir "$params.results/subtract_BigWig", mode: 'copy', pattern : "*.bw"
+
+    input : 
+        tuple val(control), val(ip), path(ip_bw), path(control_bw)
+
+    output :
+        path("*bw")
+    
+    script :
+    pseudocount = params.bw_compare_pseudocount ? "--pseudocount ${params.bw_compare_pseudocount}" : ''
+    operation = params.bw_compare_operation ? "--operation ${params.bw_compare_operation}" : '--operation ratio' 
+    bin_size = params.bin_size ? "--binSize ${params.bin_size}" : '--binSize 5'
+    """
+    #!/bin/bash
+
+    source activate DeepTools
+
+    name=${ip}.subtract_${control}.bw
+
+    bigwigCompare -b1 ${ip_bw} \\
+        -b2 ${control_bw} \\
+        -o \$name \\
+        -p ${task.cpus} \\
+        ${operation} \\
+        ${pseudocount} \\
+        ${bin_size}
+        
+    """
+}
+
 process MERGE_BW {
 
     tag "${condition}_merge_bw"
@@ -93,7 +129,7 @@ process MERGE_BW {
         val chrom_sizes
 
     output : 
-        tuple val(condition), path("*.bw")
+        tuple val(condition), path("*.bw"), emit : merge_bw_ch
     
     script : 
     """

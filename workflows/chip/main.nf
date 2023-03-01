@@ -42,6 +42,7 @@ genome_fasta = file("${params.genome}")
 genome_name = "${genome_fasta.baseName}"
 params.bwa_index_path = "${params.index}/bwa/${genome_name}"
 params.bwa_index = "${params.bwa_index_path}/${genome_name}"
+params.bwa_chrom_sizes = "${params.bwa_index_path}/chrom_sizes.txt"
 
 bwa_exists = file(params.bwa_index_path).exists()
 
@@ -73,14 +74,14 @@ include { TRIM_GALORE } from '../../modules/trimgalore/main.nf'
 include { FASTQC } from '../../modules/fastqc/main.nf'
 include { BWA_INDEX } from '../../modules/bwa/main.nf'
 include { BWA_MEM } from '../../modules/bwa/main.nf'
-include { MERGE_BAM } from '../../modules/picard/main.nf'
-include { FILTER_BAM } from '../../modules/picard/main.nf'
+include { FILTER_BAM } from '../../modules/samtools/main.nf'
 include { PICARD_METRICS } from '../../modules/picard/main.nf'
 include { MACS2 } from '../../modules/macs2/main.nf'
 include { BAM_TO_BW } from '../../modules/deeptools/main.nf'
-include { BAM_COMPARE } from '../../modules/deeptools/main.nf'
+include { BW_COMPARE } from '../../modules/deeptools/main.nf'
 include { MULTI_QC } from '../../modules/multiqc/main.nf'
 include { CHIP_INTERSECT } from '../../modules/bedtools/main.nf'
+include { MERGE_BW } from '../../modules/deeptools/main.nf'
 
 /*
 ////////////////////////////////////////////////////////////////////
@@ -110,16 +111,15 @@ workflow {
         .splitCsv(header:true, sep:',')
         .map { row -> [ row.group, row.control_group ] }
         
-
     replicates_ch = CHIP_SAMPLES_SHEET.out.replicates_ch
         .splitCsv(header:true, sep:',')
         .map { row -> [ row.simple_name, row.group ] }
-        
-
+            
     /*
      * Trim reads of adapters and low quality sequences
      */
     TRIM_GALORE( reads_ch )
+
     fq_ch = TRIM_GALORE.out.fq_ch
 
     FASTQC( reads_ch )
@@ -138,62 +138,89 @@ workflow {
      * Align with bwa
      */
     BWA_MEM( bwa_index_ch, fq_ch )
-    bam_ch = BWA_MEM.out.bwa_bam_ch
 
-    merge_bams = bam_ch
-        .join(replicates_ch)
-        .groupTuple(by:2)
 
     /*
      * Merge BAM files 
      * Some code used and inspired from https://github.com/nf-core/chipseq
      */
-    MERGE_BAM( merge_bams )
+    //merge_bams = bam_ch
+    //    .join(replicates_ch)
+    //    .groupTuple(by:2)
+    //MERGE_BAM( merge_bams )
 
     /*
      * Filter merged bam files
      * Some code used and inspired from https://github.com/nf-core/chipseq
      */
-    FILTER_BAM( MERGE_BAM.out.merged_bams_ch )
-    filtered_bams_ch = FILTER_BAM.out.filtered_bams_ch
 
-    bam_compare_ch = filtered_bams_ch
-        .join(control_ch)
-        .map { it -> it[2,0,1] }
-        .filter { it[0] != it[1] }
-        .combine(filtered_bams_ch)
-        .filter { it[0] == it[3] }
-        .map { it -> it[1,2,0,4]}
+    if ( params.filter_bam ){
+        FILTER_BAM( bam_ch )
+        processed_bam_ch = FILTER_BAM.out.filtered_bams_ch
+        bam_to_bw_input_ch = FILTER_BAM.out.bam_to_bw_input
+    } else {
+        processed_bam_ch = BWA_MEM.out.bwa_bam_ch
+        bam_to_bw_input_ch = BWA_MEM.out.bwa_bam_bai_ch
+    }
 
     /*
      * BAM --> BW
      */
-    BAM_TO_BW( FILTER_BAM.out.bam_to_bw_input )
+    BAM_TO_BW( bam_to_bw_input_ch )
 
     /*
      * MACS2
      */
+
+    // group processed bams
+    bam_grouped_ch = processed_bam_ch
+        .join(replicates_ch)
+        .groupTuple(by:2)
+        .map { it -> it[2, 1]}
+
+    // channel has form [ control, IP, [IP_bams], [control_bams]]
+    bam_compare_ch = bam_grouped_ch
+        .join(control_ch)
+        .filter{ it[0] != it[2] }
+        .map { it -> it[2, 0, 1] }
+        .combine(bam_grouped_ch, by : 0)
+
     MACS2( bam_compare_ch ) 
 
     /*
-     * BAM Compare
-     */
-    BAM_COMPARE( bam_compare_ch )
-
-    /*
      * intersect bam to peaks
-     */
+     *
     peaks_ch = MACS2.out.macs2_peaks_ch
     
-    peak_intersect_ch = filtered_bams_ch
+    peak_intersect_ch = processed_bam_ch
         .join(peaks_ch)
     
     CHIP_INTERSECT( peak_intersect_ch )
+    /*
 
     /*
-     * Picard metrics
-     * Some code used and inspired from https://github.com/nf-core/chipseq
+     * Merge BW files for a given condition
      */
-    PICARD_METRICS(filtered_bams_ch, params.genome)
+    if ( params.merge_bw ){
+        merge_bws = BAM_TO_BW
+            .out
+            .bws_ch
+            .join(replicates_ch)
+            .groupTuple(by:2)
+
+        MERGE_BW(merge_bws, params.bwa_chrom_sizes)
+    }
+
+    /*
+     * Subtract signal from Control bw in IP bw
+     */
+    merge_bw_ch = MERGE_BW.out.merge_bw_ch
+
+    merge_bw_ch_plus_control = merge_bw_ch
+        .join(control_ch)
+        .filter{ it[0] != it[2] }
+        .map { it -> it[2, 0, 1] }
+        .combine(merge_bw_ch, by : 0)
     
+    BW_COMPARE( merge_bw_ch_plus_control )
 }

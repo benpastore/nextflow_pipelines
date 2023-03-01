@@ -21,6 +21,9 @@ process BWA_INDEX {
 
     prefix=\$(basename ${genome} .fa)
     bwa index -p \$prefix ${genome}
+    
+    samtools faidx ${genome}
+    cut -f1,2 ${genome}.fai > chrom_sizes.txt
 
     """
 }
@@ -41,6 +44,7 @@ process BWA_MEM {
 
     output : 
         tuple val(sampleID), path("*sorted.bam"), emit : bwa_bam_ch
+        tuple val(sampleID), path("*sorted.bam"), path("*bai"), emit : bwa_bam_bai_ch
         path("*.summary.txt")
     
     script :

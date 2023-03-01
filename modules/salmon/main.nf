@@ -19,7 +19,7 @@ process SALMON_INDEX {
 
     source activate rnaseq
 
-    salmon index --threads ${task.cpus} -t ${transcripts} --index \$PWD
+    salmon index --threads ${task.cpus} -t ${transcripts} --index ${params.salmon_index_path}
 
     """
 

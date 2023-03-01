@@ -5,10 +5,11 @@ process MACS2 {
     label 'medium'
 
     publishDir "$params.results/MACS2/peaks", mode: 'copy', pattern : "*narrowPeak"
-    publishDir "$params.results/MACS2/summits", mode: 'copy', pattern : "*summits.bed"
+    publishDir "$params.results/MACS2/peaks", mode: 'copy', pattern : "*Peak"
+    publishDir "$params.results/MACS2/summits", mode: 'copy', pattern : "*summits*"
 
     input : 
-        tuple val(ip), path(ip_bam), val(control), path(control_bam)
+        tuple val(control), val(ip), path(ip_bam), path(control_bam)
     
     output : 
         path("*Peak")
@@ -27,15 +28,26 @@ process MACS2 {
     source activate rnaseq
 
     macs2 callpeak \\
-        -t ${ip_bam} \\
-        -c ${control_bam} \\
-        $broad \\
+        -t ${ip_bam.join(' ')} \\
+        -c ${control_bam.join(' ')} \\
         -f $format \\
         -g $params.macs_gsize \\
         -n $ip \\
         $pileup \\
         $fdr \\
         $pvalue \\
+        --keep-dup all
+
+    macs2 callpeak \\
+        -t ${ip_bam.join(' ')} \\
+        -c ${control_bam.join(' ')} \\
+        -f $format \\
+        -g $params.macs_gsize \\
+        -n $ip \\
+        $pileup \\
+        $fdr \\
+        $pvalue \\
+        --broad --broad-cutoff 0.1 \\
         --keep-dup all
 
     # bed file output

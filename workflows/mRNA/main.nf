@@ -80,10 +80,17 @@ if (params.salmon) {
 Validate inputs
 ////////////////////////////////////////////////////////////////////
 */
-if (params.design)    { ch_design = file(params.design, checkIfExists: true) } else { exit 1, 'Design file not specified!' }
-if (params.genome)    { ch_genome = file(params.genome, checkIfExists: true) } else { exit 1, 'Genome fasta not specified!' }
-if (params.results)   { ; } else { exit 1, 'Results path not specified!' }
-if (params.outprefix) { ; } else { 'Outprefix not specified! Defaulting to mRNA_analysis' }
+if (params.design)          { ch_design = file(params.design, checkIfExists: true) } else { exit 1, 'Design file not specified!' }
+if (params.genome)          { ch_genome = file(params.genome, checkIfExists: true) } else { exit 1, 'Genome fasta not specified!' }
+if (params.results)         { ; } else { exit 1, 'Results path not specified!' }
+if (params.outprefix)       { ; } else { 'Outprefix not specified! Defaulting to mRNA_analysis' }
+
+/*
+////////////////////////////////////////////////////////////////////
+set project name
+////////////////////////////////////////////////////////////////////
+*/
+params.project_name = params.outprefix ? "${params.outprefix}" : "mRNA_analysis"
 
 /*
 ////////////////////////////////////////////////////////////////////
@@ -111,11 +118,59 @@ include { MASTER_TABLE } from '../../modules/general/main.nf'
 
 /*
 ////////////////////////////////////////////////////////////////////
+Import subworkflows ???
+////////////////////////////////////////////////////////////////////
+*/
+
+/*
+////////////////////////////////////////////////////////////////////
+Subworkflow
+////////////////////////////////////////////////////////////////////
+*/
+workflow FEATURE_COUNT {
+    /*
+     * Parse bam files into channel taking bam file path and simple name
+     */
+    bams_ch = Channel
+        .fromPath( "$params.bam_path/*.bam" )
+        .map { fastq -> [ fastq.SimpleName, fastq] }
+    
+    bams_ch.view()
+
+    /*
+     * Feature Counts
+     */
+    FEATURECOUNTS( bams_ch, params.gtf )
+    
+    feature_counts_ch = FEATURECOUNTS.out.feature_counts_ch
+    
+    master_table_input = feature_counts_ch
+    
+    /*
+     * set project name
+     */
+    params.project_name = params.outprefix ? "${params.outprefix}" : "mRNA_analysis"
+
+    /*
+     * Make master table
+     */
+    MASTER_TABLE(
+        params.project_name,
+        master_table_input.collect()
+    )
+}
+
+
+/*
+////////////////////////////////////////////////////////////////////
 Workflow
 ////////////////////////////////////////////////////////////////////
 */
 workflow {
 
+    /*
+     * Trim reads of adapters and low quality sequences
+     */
     MRNA_SAMPLES_SHEET( params.design )
 
     if (params.single_end == false ){
@@ -164,22 +219,20 @@ workflow {
     /*
      * Filter STAR alignment
      */
-    FILTER_BAM( bam_ch )
-
-    filter_bam_ch = FILTER_BAM.out.filtered_bams_ch
-
-    merge_bams = filter_bam_ch
-        .join(replicates_ch)
-        .groupTuple(by:2)
+    
+    if ( params.filter_bam ){
+        FILTER_BAM( bam_ch )
+        processed_bam_ch = FILTER_BAM.out.filtered_bams_ch
+        bam_to_bw_input_ch = FILTER_BAM.out.bam_to_bw_input
+    } else {
+        processed_bam_ch = bam_ch
+        bam_to_bw_input_ch = bam_ch
+    }
 
     /*
      * BAM --> BW using deeptools bam coverage
      */
-    bam_to_bw_ch = FILTER_BAM
-        .out
-        .bam_to_bw_input
-
-    BAM_TO_BW( bam_to_bw_ch )
+    BAM_TO_BW( bam_to_bw_input_ch )
 
     /*
      * Merge BW files for a given condition
@@ -217,32 +270,34 @@ workflow {
     /*
      * Feature Counts
      */
-    FEATURECOUNTS( filter_bam_ch, params.gtf )
-    feature_counts_ch = FEATURECOUNTS.out.feature_counts_ch
-    
-    /*
-     * Join counts table from salmon + feature counts, if neccesary 
-     */
-    if (params.salmon) {
-        counts_ch = feature_counts_ch.join(salmon_quant_ch)
-
-        RBIND_COUNTS( counts_ch )
+    if ( params.feature_counts ) {
+        FEATURECOUNTS( processed_bam_ch, params.gtf )
+        feature_counts_ch = FEATURECOUNTS.out.feature_counts_ch
         
-        master_table_input = RBIND_COUNTS.out.counts_ch
-    
-    } else {
-        master_table_input = feature_counts_ch
-    
-    }
+        /*
+        * Join counts table from salmon + feature counts, if neccesary 
+        */
+        if (params.salmon) {
+            counts_ch = feature_counts_ch.join(salmon_quant_ch)
 
-    params.project_name = params.outprefix ? "${params.outprefix}" : "mRNA_analysis"
-    /*
-     * Make master table
-     */
-    MASTER_TABLE(
-        params.project_name,
-        master_table_input.collect(),
-    )
+            RBIND_COUNTS( counts_ch )
+            
+            master_table_input = RBIND_COUNTS.out.counts_ch
+        
+        } else {
+            master_table_input = feature_counts_ch
+        
+        }
+
+        params.project_name = params.outprefix ? "${params.outprefix}" : "mRNA_analysis"
+        /*
+        * Make master table
+        */
+        MASTER_TABLE(
+            params.project_name,
+            master_table_input.collect()
+        )
+    }
 
 }
 

@@ -5,7 +5,7 @@ process TRIM_GALORE {
     label 'medium'
     
     publishDir "$params.results/trimmed_fastq", mode : 'copy', pattern : '*.fq.gz'
-    publishDir "$params.results/trimmed_fastq", mode : 'copy', pattern : '_trimming_report.txt'
+    publishDir "$params.results/trimmed_fastq", mode : 'copy', pattern : '*report.txt'
 
     input : 
         tuple val(sampleID), val(fastq)

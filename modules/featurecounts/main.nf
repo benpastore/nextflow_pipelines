@@ -10,7 +10,7 @@ process FEATURECOUNTS {
     publishDir "$params.results/counts/feature_counts", mode: 'copy', pattern : "*.tsv"
 
     input :
-        tuple val(sampleID), path(bam)
+        tuple val(sampleID), path(bam), path(bai)
         val gtf
 
     output :

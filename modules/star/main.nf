@@ -58,6 +58,7 @@ process STAR_ALIGN {
     outFilterType_command = params.outFilterType ? "--outFilterType ${params.outFilterType}" : "--outFilterType BySJout"
     outFilterIntronMotifs_command = params.outFilterIntronMotifs ? "--outFilterIntronMotifs ${params.outFilterIntronMotifs}" : "--outFilterIntronMotifs RemoveNoncanonical"
     outFilterMultimapNmax_command = params.outFilterMultimapNmax ? "--outFilterMultimapNmax ${params.outFilterMultimapNmax}" : "--outFilterMultimapNmax 20"
+    outSAMprimaryFlag_command = params.outSAMprimaryFlag ? "--outSAMprimaryFlag ${params.outSAMprimaryFlag}" : "--outSAMprimaryFlag OneBestScore"
     """
     #!/bin/bash
     
@@ -73,6 +74,7 @@ process STAR_ALIGN {
          ${outFilterType_command} \\
          ${outFilterMultimapNmax_command} \\
          ${outFilterIntronMotifs_command} \\
+         ${outSAMprimaryFlag_command} \\
          --outFileNamePrefix ${sampleID}.
  
     samtools index -@ 12 ${sampleID}.Aligned.sortedByCoord.out.bam
