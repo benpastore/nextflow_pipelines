@@ -10,7 +10,6 @@ process SALMON_INDEX {
         val transcripts
     
     output : 
-        path("*")
         val("${params.salmon_index_path}"), emit : salmon_idx_ch
     
     script : 

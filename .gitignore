@@ -3,6 +3,7 @@
 *.sif
 *.out
 *.nextflow*
+*sailor*
 
 singularity/
 index/

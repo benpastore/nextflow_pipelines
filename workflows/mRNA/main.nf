@@ -63,7 +63,7 @@ if (params.salmon) {
     genome_fasta = file("${params.salmon}")
     genome_name = "${genome_fasta.baseName}"
     params.salmon_index_path = "${params.index}/salmon/${genome_name}"
-    params.salmon_index = "${params.salmon_index_path}"
+    params.salmon_index = "${params.index}/salmon"
 
     salmon_exists = file(params.salmon_index_path).exists()
 

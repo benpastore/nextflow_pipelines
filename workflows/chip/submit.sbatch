@@ -2,7 +2,7 @@
 
 #SBATCH --no-requeue
 #SBATCH -c 1
-#SBATCH --account=PAS1473 --nodes=1 --ntasks-per-node=1 --time=8:00:00 --mem=2gb
+#SBATCH --account=PCON0160 --nodes=1 --ntasks-per-node=1 --time=8:00:00 --mem=2gb
 
-nextflow /fs/ess/PCON0160/ben/pipelines/nextflow_pipelines/workflows/chip/main.nf --design /fs/ess/PCON0160/ben/projects/attf6_m01/miska_chip.csv --results /fs/ess/PCON0160/ben/projects/attf6_m01/miska_chip_results --single_end true -profile cluster --outprefix miska_chip
+nextflow /fs/ess/PCON0160/ben/pipelines/nextflow_pipelines/workflows/chip/main.nf --design /fs/ess/PAS1473/ben_past_projects/Function_eggd_smRNA_RNA/samples_se_chip_hlh30_modencode.csv --results /fs/ess/PAS1473/ben_past_projects/Function_eggd_smRNA_RNA/hlh30_chip_modEncode --single_end true -profile cluster --outprefix analysis
 
