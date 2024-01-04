@@ -1,0 +1,7 @@
+# combine fastq files
+# switch trimming program to atria
+# add module for deep variant
+# add module for repeat expansion ??
+    // DeepVariant
+    // Repeat Expansion
+    // Indel caller

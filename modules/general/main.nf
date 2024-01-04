@@ -44,8 +44,6 @@ process MRNA_SAMPLES_SHEET {
 
     source activate rnaseq
 
-    which bwa
-
     python3 ${params.bin}/process_design_input_mRNA.py -input ${samples}
 
     """
@@ -100,4 +98,24 @@ process RBIND_COUNTS {
     cat ${salmon} ${feature_counts} | grep -v "Name" | grep -v "Geneid" >> ${sampleID}.tsv
     """
 
+}
+
+
+//https://github.com/AndersenLab/wi-gatk/blob/master/main.nf
+process concat_strain_gvcfs {
+
+    label 'sm'
+    tag { "${strain}" }
+
+    input:
+        tuple strain, path("*"), path(contigs)
+
+    output:
+        tuple path("${strain}.g.vcf.gz"), path("${strain}.g.vcf.gz.tbi")
+
+    """
+        awk '{ print \$0 ".g.vcf.gz" }' ${contigs} > contig_set.tsv
+        bcftools concat  -O z --file-list contig_set.tsv > ${strain}.g.vcf.gz
+        bcftools index --tbi ${strain}.g.vcf.gz
+    """
 }

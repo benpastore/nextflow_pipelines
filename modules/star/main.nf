@@ -46,7 +46,7 @@ process STAR_ALIGN {
         tuple val(sampleID), val(fastq)
     
     output :
-        tuple val(sampleID), path("${sampleID}.Aligned.sortedByCoord.out.bam"), emit : star_bams_ch // path("${sampleID}.Aligned.sortedByCoord.out.bam.bai"), emit : star_bams_ch
+        tuple val(sampleID), path("${sampleID}.Aligned.sortedByCoord.out.bam"), path("${sampleID}.Aligned.sortedByCoord.out.bam.bai"), emit : star_bams_ch // path("${sampleID}.Aligned.sortedByCoord.out.bam.bai"), emit : star_bams_ch
         path("*Log.final.out")
 
     script : 
@@ -78,59 +78,60 @@ process STAR_ALIGN {
     
     source activate rnaseq
 
-    #STAR --runMode alignReads \\
-    #    --genomeDir ${star_idx} \\
-    #    --runThreadN ${task.cpus} \\
-    #    ${fastq_command} \\
-    #    ${readFilesCommand} \\
-    #    ${alignIntronMax_command} \\
-    #    ${outFilterMismatchNoverReadLmax_command} \\
-    #    ${outSAMtype_command} \\
-    #    ${outFilterType_command} \\
-    #    ${outFilterMultimapNmax_command} \\
-    #    ${outFilterIntronMotifs_command} \\
-    #    ${outSAMprimaryFlag_command} \\
-    #    ${outFilterScoreMinOverLread_command} \\
-    #    ${outFilterMatchNminOverLread_command} \\
-    #    ${outFilterMatchNmin_command} \\
-    #    ${outFilterMismatchNmax_command} \\
-    #    ${outFilterScoreMin_command} \\
-    #    ${outSAMunmapped_command} \\
-    #    ${outFilterMultimapScoreRange_command} \\
-    #    ${alignEndsType_command} \\
-    #    ${genomeLoad_command} \\
-    #    ${outReadsUnmapped_command} \\
-    #    ${outSAMmode_command} \\
-    #    ${outSAMattributes_command} \\
-    #    ${outBAMcompression_command} \\
-    #    --outFileNamePrefix ${sampleID}.
-    
-    # for alignment for sailor purposes
     STAR --runMode alignReads \\
         --genomeDir ${star_idx} \\
         --runThreadN ${task.cpus} \\
         ${fastq_command} \\
-        --readFilesCommand zcat \\
-        --alignIntronMax 10000 \\
-        --outSAMtype BAM SortedByCoordinate \\
-        --outFilterType BySJout \\
-        --outFilterMultimapNmax 1 \\
-        --outFilterIntronMotifs RemoveNoncanonical \\
-        --outSAMprimaryFlag OneBestScore \\
-        --outFilterScoreMinOverLread 0.0 \\
-        --outFilterMatchNminOverLread 0.0 \\
-        --outFilterMismatchNmax 999 \\
-        --outSAMunmapped Within \\
-        --outFilterMultimapScoreRange 1 \\
-        --alignEndsType Local \\
-        --genomeLoad NoSharedMemory \\
-        --outReadsUnmapped Fastx \\
-        --outSAMmode Full \\
-        --outSAMattributes All \\
-        --outBAMcompression 10 \\
+        ${readFilesCommand} \\
+        ${alignIntronMax_command} \\
+        ${outFilterMismatchNoverReadLmax_command} \\
+        ${outSAMtype_command} \\
+        ${outFilterType_command} \\
+        ${outFilterMultimapNmax_command} \\
+        ${outFilterIntronMotifs_command} \\
+        ${outSAMprimaryFlag_command} \\
+        ${outFilterScoreMinOverLread_command} \\
+        ${outFilterMatchNminOverLread_command} \\
+        ${outFilterMatchNmin_command} \\
+        ${outFilterMismatchNmax_command} \\
+        ${outFilterScoreMin_command} \\
+        ${outSAMunmapped_command} \\
+        ${outFilterMultimapScoreRange_command} \\
+        ${alignEndsType_command} \\
+        ${genomeLoad_command} \\
+        ${outReadsUnmapped_command} \\
+        ${outSAMmode_command} \\
+        ${outSAMattributes_command} \\
+        ${outBAMcompression_command} \\
         --outFileNamePrefix ${sampleID}.
 
     samtools index -@ 12 ${sampleID}.Aligned.sortedByCoord.out.bam
     """
 }
 
+/*
+    # for alignment for sailor purposes
+    #STAR --runMode alignReads \\
+    #    --genomeDir ${star_idx} \\
+    #    --runThreadN ${task.cpus} \\
+    #    ${fastq_command} \\
+    #    --readFilesCommand zcat \\
+    #    --alignIntronMax 10000 \\
+    #    --outSAMtype BAM SortedByCoordinate \\
+    #    --outFilterType BySJout \\
+    #    --outFilterMultimapNmax 1 \\
+    #    --outFilterIntronMotifs RemoveNoncanonical \\
+    #    --outSAMprimaryFlag OneBestScore \\
+    #    --outFilterScoreMinOverLread 0.0 \\
+    #    --outFilterMatchNminOverLread 0.0 \\
+    #    --outFilterMismatchNmax 999 \\
+    #    --outSAMunmapped Within \\
+    #    --outFilterMultimapScoreRange 1 \\
+    #    --alignEndsType Local \\
+    #    --genomeLoad NoSharedMemory \\
+    #    --outReadsUnmapped Fastx \\
+    #    --outSAMmode Full \\
+    #    --outSAMattributes All \\
+    #    --outBAMcompression 10 \\
+    #    --outFileNamePrefix ${sampleID}.
+*/

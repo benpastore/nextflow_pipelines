@@ -149,7 +149,7 @@ workflow FEATURE_COUNT {
     /*
      * set project name
      */
-    params.project_name = params.outprefix ? "${params.outprefix}" : "mRNA_analysis"
+    params.project_name = params.outprefix ? "${params.outprefix}" : "feature_counting"
 
     /*
      * Make master table
