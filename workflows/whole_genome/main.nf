@@ -79,6 +79,7 @@ include { FILTER_BAM } from '../../modules/samtools/main.nf'
 include { PICARD_METRICS } from '../../modules/picard/main.nf'
 include { BAM_TO_BW } from '../../modules/deeptools/main.nf'
 include { DEEPVARIANT_CALL_VARIANTS } from '../../modules/deepvariant/main.nf'
+include { EXPANSION_HUNTER } from '../../modules/expansion_hunter/main.nf'
 
 /*
 ////////////////////////////////////////////////////////////////////
@@ -115,8 +116,9 @@ workflow {
 
     fq_ch = ATRIA.out.fq_ch
 
-    FASTQC( reads_ch )
-
+    if ( params.fastqc ){
+        FASTQC( reads_ch )
+    }
     /*
      * Build bwa index
      */
@@ -157,10 +159,11 @@ workflow {
      * call variants 
      */
     // DeepVariant
-
     DEEPVARIANT_CALL_VARIANTS( bam_to_bw_input_ch, params.genome )
 
     // Repeat Expansion
+    EXPANSION_HUNTER( bam_to_bw_input_ch, params.genome )
+
     // Indel caller
     
 }

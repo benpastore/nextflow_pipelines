@@ -3,9 +3,10 @@ process ATRIA {
     tag "${sampleID}_ATRIA"
 
     label 'atria'
+
+    errorStrategy = 'ignore'
     
-    //publishDir "$params.results/trimmed_fastq", mode : 'copy', pattern : '*.fq.gz'
-    publishDir "$params.results/atria/${sampleID}", mode : 'copy', pattern : '!*.fq.gz'
+    publishDir "$params.results/atria/${sampleID}", mode : 'copy', pattern : '*'
 
     input : 
         tuple val(sampleID), val(fastq)
