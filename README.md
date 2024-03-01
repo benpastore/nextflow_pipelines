@@ -1,4 +1,4 @@
-# **Pipelines Galore**
+# **Pipelines**
 
 ## *Collection of pipelines used in RNA/DNA Genomics Analysis*
 
