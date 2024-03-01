@@ -80,6 +80,8 @@ include { PICARD_METRICS } from '../../modules/picard/main.nf'
 include { BAM_TO_BW } from '../../modules/deeptools/main.nf'
 include { DEEPVARIANT_CALL_VARIANTS } from '../../modules/deepvariant/main.nf'
 include { EXPANSION_HUNTER } from '../../modules/expansion_hunter/main.nf'
+include { GATK_CALL_VARIANTS } from '../../modules/gatk/main.nf'
+
 
 /*
 ////////////////////////////////////////////////////////////////////
@@ -158,8 +160,17 @@ workflow {
     /* 
      * call variants 
      */
-    // DeepVariant
-    DEEPVARIANT_CALL_VARIANTS( bam_to_bw_input_ch, params.genome )
+    if ( params.variant_caller == 'DeepVariant') {
+
+        // DeepVariant
+        DEEPVARIANT_CALL_VARIANTS( bam_to_bw_input_ch, params.genome )
+
+    } else { 
+        
+        // GATK
+        GATK_CALL_VARIANTS( bam_to_bw_input_ch, params.genome )
+
+    }
 
     // Repeat Expansion
     EXPANSION_HUNTER( bam_to_bw_input_ch, params.genome )

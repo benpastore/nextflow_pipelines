@@ -12,7 +12,7 @@ process ATRIA {
         tuple val(sampleID), val(fastq)
 
     output :
-        tuple val(sampleID), path("*.fq.gz"), emit : fq_ch
+        tuple val(sampleID), path("*.{fq,fastq}.gz"), emit : fq_ch
         path("*")
 
 
