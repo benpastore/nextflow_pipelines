@@ -81,6 +81,8 @@ include { BAM_TO_BW } from '../../modules/deeptools/main.nf'
 include { DEEPVARIANT_CALL_VARIANTS } from '../../modules/deepvariant/main.nf'
 include { EXPANSION_HUNTER } from '../../modules/expansion_hunter/main.nf'
 include { GATK_CALL_VARIANTS } from '../../modules/gatk/main.nf'
+include { GET_CONTIGS } from '../../modules/gatk/main.nf'
+
 
 
 /*
@@ -156,6 +158,12 @@ workflow {
      */
     BAM_TO_BW( bam_to_bw_input_ch )
 
+    /*
+     * Get contigs
+     */
+    GET_CONTIGS( bam_to_bw_input_ch )
+    variant_caller_input = GET_CONTIGS.out.variant_caller_input
+
 
     /* 
      * call variants 
@@ -163,17 +171,17 @@ workflow {
     if ( params.variant_caller == 'DeepVariant') {
 
         // DeepVariant
-        DEEPVARIANT_CALL_VARIANTS( bam_to_bw_input_ch, params.genome )
+        DEEPVARIANT_CALL_VARIANTS( variant_caller_input, params.genome )
 
     } else { 
-        
+         
         // GATK
-        GATK_CALL_VARIANTS( bam_to_bw_input_ch, params.genome )
+        GATK_CALL_VARIANTS( variant_caller_input, params.genome )
 
     }
 
     // Repeat Expansion
-    EXPANSION_HUNTER( bam_to_bw_input_ch, params.genome )
+    EXPANSION_HUNTER( variant_caller_input, params.genome )
 
     // Indel caller
     
