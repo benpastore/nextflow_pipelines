@@ -38,6 +38,10 @@ params.index = "${params.base}/../../index"
 Check bwa index is made
 ////////////////////////////////////////////////////////////////////
 */
+/*
+* This part is setting up for the default values of the input (we can always change these value in the command line 
+* in the run.sh in the sam_cendr folder). However, we DO NOT want to change these params
+*/
 genome_fasta = file("${params.genome}")
 genome_name = "${genome_fasta.baseName}"
 params.bwa_index_path = "${params.index}/bwa/${genome_name}"
@@ -54,7 +58,7 @@ if (bwa_exists == true){
 
 /*
 ////////////////////////////////////////////////////////////////////
-Validate inputs
+Validate inputs (these are things that being specified in run.sh in projects/2024_CeNDR)
 ////////////////////////////////////////////////////////////////////
 */
 if (params.design)    { ch_design = file(params.design, checkIfExists: true) } else { exit 1, 'Design file not specified!' }
@@ -82,7 +86,7 @@ include { DEEPVARIANT_CALL_VARIANTS } from '../../modules/deepvariant/main.nf'
 include { EXPANSION_HUNTER } from '../../modules/expansion_hunter/main.nf'
 include { GATK_CALL_VARIANTS } from '../../modules/gatk/main.nf'
 include { GET_CONTIGS } from '../../modules/gatk/main.nf'
-
+include { CONCAT_STRAIN_GVCFS } from '../../modules/gatk/main.nf'
 
 
 /*
@@ -150,6 +154,7 @@ workflow {
         bam_to_bw_input_ch = FILTER_BAM.out.bam_to_bw_input
     } else {
         processed_bam_ch = BWA_MEM.out.bwa_bam_ch
+        // line 158 is important
         bam_to_bw_input_ch = BWA_MEM.out.bwa_bam_bai_ch
     }
 
@@ -163,6 +168,10 @@ workflow {
      */
     GET_CONTIGS( bam_to_bw_input_ch )
     variant_caller_input = GET_CONTIGS.out.variant_caller_input
+    variant_caller_input.map { conditions, bam, bai, contigs ->
+        return [conditions, bam, bai]
+    }.set{ expansion_hunter_input }
+    
 
 
     /* 
@@ -181,8 +190,17 @@ workflow {
     }
 
     // Repeat Expansion
-    EXPANSION_HUNTER( variant_caller_input, params.genome )
+    EXPANSION_HUNTER( expansion_hunter_input, params.genome )
 
     // Indel caller
     
+
+    /*
+    * concat_strain_vcfs
+    */ 
+    concat_strain_input = variant_caller_input.map { conditions, bam, bai, contigs -> 
+        return [conditions, contigs]
+    }
+    concat_strain_input.view()
+    CONCAT_STRAIN_GVCFS( concat_strain_input )
 }

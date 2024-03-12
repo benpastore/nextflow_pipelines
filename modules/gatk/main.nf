@@ -15,7 +15,8 @@ process GATK_CALL_VARIANTS {
 
     output : 
         tuple val(condition), val("*.vcf"), emit : gatk_vcf_ch
-        path("*")
+        path("${condition}.gatk.vcf"), emit : gatk_out_ch
+        path("*")       
     
     script:
     // -Xms1g -XX:ConcGCThreads=${task.cpus}
@@ -59,5 +60,27 @@ process GET_CONTIGS {
     source activate rnaseq
     
     samtools idxstats ${bam} | cut -f 1 | grep -v '*' > contigs.txt
+    """
+}
+
+process  CONCAT_STRAIN_GVCFS {
+    label 'high'
+    tag "${condition}"
+
+    input:
+        tuple val(condition), val(contigs)
+    
+    output:
+        tuple path("${condition}.gatk.vcf.gz"), path("${condition}.gatk.vcf.gz.tbi")
+
+    script:
+    """
+    #!/bin/bash
+    
+    source activate rnaseq
+
+    awk '{ print \$0 ".gatk.vcf.gz" }' ${contigs} > contig_set.tsv
+    bcftools concat  -O z --file-list contig_set.tsv > ${condition}.gatk.vcf.gz
+    bcftools index --tbi ${condition}.gatk.vcf.gz
     """
 }
