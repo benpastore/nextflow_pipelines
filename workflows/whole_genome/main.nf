@@ -84,11 +84,15 @@ include { PICARD_METRICS } from '../../modules/picard/main.nf'
 include { BAM_TO_BW } from '../../modules/deeptools/main.nf'
 include { DEEPVARIANT_CALL_VARIANTS } from '../../modules/deepvariant/main.nf'
 include { EXPANSION_HUNTER } from '../../modules/expansion_hunter/main.nf'
-include { GATK_CALL_VARIANTS } from '../../modules/gatk/main.nf'
 include { GET_CONTIGS } from '../../modules/gatk/main.nf'
+include { GATK_PREPARE_GENOME } from '../../modules/gatk/main.nf'
+include { GATK_PROCESS_BAM } from '../../modules/gatk/main.nf'
+include { GATK_CALL_VARIANTS } from '../../modules/gatk/main.nf'
 include { CONCAT_STRAIN_GVCFS } from '../../modules/gatk/main.nf'
-
-
+include { MAKE_SAMPLE_MAP } from '../../modules/gatk/main.nf'
+include { IMPORT_GENOME_DB } from '../../modules/gatk/main.nf'
+include { CONCATENATE_VCF } from '../../modules/gatk/main.nf'
+include { GATK_GENOTYPE_COHORT } from '../../modules/gatk/main.nf'
 /*
 ////////////////////////////////////////////////////////////////////
 Workflow
@@ -127,6 +131,9 @@ workflow {
     if ( params.fastqc ){
         FASTQC( reads_ch )
     }
+
+
+    // 3/14 maybe switch out bwa for STAR??
     /*
      * Build bwa index
      */
@@ -141,6 +148,7 @@ workflow {
      * Align with bwa
      */
     BWA_MEM( bwa_index_ch, fq_ch )
+    // 
 
     /*
      * Filter merged bam files
@@ -162,45 +170,101 @@ workflow {
      * BAM --> BW
      */
     BAM_TO_BW( bam_to_bw_input_ch )
-
-    /*
-     * Get contigs
-     */
-    GET_CONTIGS( bam_to_bw_input_ch )
-    variant_caller_input = GET_CONTIGS.out.variant_caller_input
-    variant_caller_input.map { conditions, bam, bai, contigs ->
-        return [conditions, bam, bai]
-    }.set{ expansion_hunter_input }
     
-
-
     /* 
      * call variants 
      */
     if ( params.variant_caller == 'DeepVariant') {
 
         // DeepVariant
+        variant_caller_input = bam_to_bw_input_ch
         DEEPVARIANT_CALL_VARIANTS( variant_caller_input, params.genome )
 
-    } else { 
-         
+    } else {
+
+        // general structure follows pipeline found at https://github.com/AndersenLab/wi-gatk
+        // with some modifications to better fit my existing pipeline.
+
+        /*
+        * Get contigs
+        */
+        GET_CONTIGS( bam_to_bw_input_ch.first() )
+        // get contigs: I, II, III, IV, V, X
+        contigs = GET_CONTIGS.out.splitText { it.strip() }
+
+        GATK_PREPARE_GENOME( params.genome )
+
+        GATK_PROCESS_BAM( bam_to_bw_input_ch )
+
+        /*
+         * Variant caller combines individual chromosomes
+         * to each vcf file and will call the variants for 
+         * each chromosome independently. This is more efficient
+         * as it allows calling variants for one vcf file as separate jobs (1 per chromosome)
+         * the number of jobs will be: # vcf * # chromosomes
+         */
+
+        variant_caller_input = GATK_PROCESS_BAM
+            .out
+            .processed_bam_ch
+            .combine( contigs )
+            .combine( GATK_PREPARE_GENOME.out.processed_genome )
+
+        //variant_caller_input.view()
+
         // GATK
-        GATK_CALL_VARIANTS( variant_caller_input, params.genome )
+        GATK_CALL_VARIANTS( variant_caller_input )
+
+        //GATK_CALL_VARIANTS.out.groupTuple().view()
+
+        // concat vcfs, combine chromsome calls for each strain
+        CONCAT_STRAIN_GVCFS( GATK_CALL_VARIANTS.out.groupTuple() )
+
+        // write sample map 
+        MAKE_SAMPLE_MAP( CONCAT_STRAIN_GVCFS.out.concat_vcf_ch.collect().toList() )
+
+        genome_db_input = MAKE_SAMPLE_MAP
+            .out
+            .sample_map
+            .combine( contigs )
+
+        // make gatk db
+        IMPORT_GENOME_DB( genome_db_input )
+
+        // genotype cohort gvcf db
+        IMPORT_GENOME_DB
+            .out
+            .genome_db_output
+            .combine( GATK_PREPARE_GENOME.out.processed_genome ) | \
+            GATK_GENOTYPE_COHORT
+
+        // combine vcf
+        GATK_GENOTYPE_COHORT.out.genotype_cohort_gvcf_db_out.collect() | CONCATENATE_VCF
+        
+        /*
+        // filters
+        soft_filter
+            .out
+            .soft_vcf_stats.concat(
+                hard_filter.out.hard_vcf_stats
+                )
+                .collect() | multiqc_report
+                
+        multiqc_report
+            .out
+            .for_report
+            .combine(soft_filter.out.soft_report)
+            .combine(hard_filter.out.hard_vcf_stats)| html_report
+        */
 
     }
 
-    // Repeat Expansion
-    EXPANSION_HUNTER( expansion_hunter_input, params.genome )
+    if ( params.run_expansion_hunter ) {
+        // Repeat Expansion
+        EXPANSION_HUNTER( variant_caller_input, params.genome )
+    }
 
     // Indel caller
-    
 
-    /*
-    * concat_strain_vcfs
-    */ 
-    concat_strain_input = variant_caller_input.map { conditions, bam, bai, contigs -> 
-        return [conditions, contigs]
-    }
-    concat_strain_input.view()
-    CONCAT_STRAIN_GVCFS( concat_strain_input )
+    // SNP EFF
 }

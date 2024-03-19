@@ -26,10 +26,10 @@ def combine_lanes(dir, outdir) :
             os.system(f"cat {' '.join(R1_sort)} > {outdir}/{basename}_1.fq.gz")
             os.system(f"cat {' '.join(R2_sort)} > {outdir}/{basename}_2.fq.gz")
             print(os.path.basename(s))
+            print(R1)
+            print(R1)
+            print("++++++++++++++++++++++++++++")
 
-
-
-        
         #if len(l1) > 0 : 
         #    for sample in l1 : 
         #        basename = os.path.basename(sample).split("_L1_")[0]
@@ -42,8 +42,10 @@ def combine_lanes(dir, outdir) :
                 #os.system(f"cat {' '.join(R1_sort)} > {outdir}/{basename}_combn_1.fq.gz")
                 #os.system(f"cat {' '.join(R2_sort)} > {outdir}/{basename}_combn_2.fq.gz")
 
-combine_lanes("/fs/ess/PAS0631/kholman/deep_sequencing/new_sib_pairs_fq/RawData", "/fs/scratch/PAS0631/combined_fastq")
+#combine_lanes("/fs/ess/PAS0631/kholman/deep_sequencing/new_sib_pairs_fq/RawData", "/fs/scratch/PAS0631/combined_fastq")
 
-combine_lanes("/fs/scratch/PAS0631/sibs_analysis/SibsRawData", "/fs/scratch/PAS0631/combined_fastq")
+#combine_lanes("/fs/scratch/PAS0631/sibs_analysis/SibsRawData", "/fs/scratch/PAS0631/combined_fastq")
 
-combine_lanes("/fs/scratch/PAS0631/sibs_analysis/SibsRawData2ndRound", "/fs/scratch/PAS0631/combined_fastq")
+#combine_lanes("/fs/scratch/PAS0631/sibs_analysis/SibsRawData2ndRound", "/fs/scratch/PAS0631/combined_fastq")
+
+combine_lanes("/fs/scratch/PAS0631/192sibconcordant", "/fs/scratch/PAS0631/combined_fastq")
