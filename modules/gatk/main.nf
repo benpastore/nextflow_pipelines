@@ -275,3 +275,23 @@ process CONCATENATE_VCF {
 
     """
 }
+
+process MULTIQC {
+
+    publishDir "${params.results}/report", mode: 'copy'
+
+    input:
+        path("*")
+
+    output:
+        val("multiqc_data/*.json")
+        path "multiqc.html", emit: "for_report"
+
+    script:
+    """
+    #!/bin/bash
+    
+    multiqc -k json --filename multiqc.html .
+    """
+
+}

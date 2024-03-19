@@ -93,6 +93,10 @@ include { MAKE_SAMPLE_MAP } from '../../modules/gatk/main.nf'
 include { IMPORT_GENOME_DB } from '../../modules/gatk/main.nf'
 include { CONCATENATE_VCF } from '../../modules/gatk/main.nf'
 include { GATK_GENOTYPE_COHORT } from '../../modules/gatk/main.nf'
+include { MULTIQC } from '../../modules/gatk/main.nf'
+
+
+
 /*
 ////////////////////////////////////////////////////////////////////
 Workflow
@@ -189,6 +193,7 @@ workflow {
         * Get contigs
         */
         GET_CONTIGS( bam_to_bw_input_ch.first() )
+
         // get contigs: I, II, III, IV, V, X
         contigs = GET_CONTIGS.out.splitText { it.strip() }
 
@@ -210,7 +215,14 @@ workflow {
             .combine( contigs )
             .combine( GATK_PREPARE_GENOME.out.processed_genome )
 
-        //variant_caller_input.view()
+        //println "Contigs:"
+        contigs.view()
+        //println "Prepared Genome:"
+        //GATK_PREPARE_GENOME.out.processed_genome.view()
+        //println "Processed BAM:"
+        //GATK_PROCESS_BAM.out.processed_bam_ch.view()
+        //println "Variant caller input:"
+       //variant_caller_input.view()
 
         // GATK
         GATK_CALL_VARIANTS( variant_caller_input )
@@ -219,7 +231,9 @@ workflow {
 
         // concat vcfs, combine chromsome calls for each strain
         CONCAT_STRAIN_GVCFS( GATK_CALL_VARIANTS.out.groupTuple() )
-
+        
+        //CONCAT_STRAIN_GVCFS.out.concat_vcf_ch.view()
+       
         // write sample map 
         MAKE_SAMPLE_MAP( CONCAT_STRAIN_GVCFS.out.concat_vcf_ch.collect().toList() )
 
@@ -259,12 +273,47 @@ workflow {
 
     }
 
+
+    /*
+    // SNP EFF *** add code for SnpEff https://pcingola.github.io/SnpEff/snpeff/introduction/ ***
+    Step 1. building snp eff database
+    https://pcingola.github.io/SnpEff/snpeff/build_db/#step-2-option-1-building-a-database-from-gtf-files
+
+    1. Make directory for new genome
+    2. put annotation files in directory (gtf file, genome reference)
+    3. add information to genome configuration file
+
+    cd /path/to/snpEff
+    java -jar snpEff.jar build -gft22 -v c_elegans.WS283
+
+    Step 2. Running SNPEff
+    curr_dir=$PWD
+    output="$curr_dir/WI.20220216.hard-filter_v2"
+    sbatch="$curr_dir/sbatch"
+    vcf="/fs/ess/PCON0160/CaeNDR/WI.20220216.hard-filter.vcf.gz"
+    snpeff="/fs/ess/PCON0160/ben/pipelines/snpEff/snpEff.jar"
+    db="c_elegans.WS283"
+
+    java -Xmx110g -jar $snpeff \
+        -v \
+        -no-downstream \
+        -no-intergenic \
+        -no-upstream \
+        -onlyProtein \
+        -ud 0 \
+        $db \
+        $vcf \
+        > $output/$name.ann.vcf
+
+
+    */
+
     if ( params.run_expansion_hunter ) {
         // Repeat Expansion
         EXPANSION_HUNTER( variant_caller_input, params.genome )
     }
 
+    
+    
     // Indel caller
-
-    // SNP EFF
 }

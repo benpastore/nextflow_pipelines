@@ -1,0 +1,58 @@
+#!/bin/bash
+
+
+# build database
+# https://pcingola.github.io/SnpEff/snpeff/build_db/#step-2-option-1-building-a-database-from-gtf-files
+# java -jar snpEff.jar build -gtf22 -v c_elegans.WS283
+
+
+# set variables
+curr_dir=$PWD
+output="$curr_dir/WI.20220216.hard-filter_v2"
+sbatch="$curr_dir/sbatch"
+vcf="/fs/ess/PCON0160/CaeNDR/WI.20220216.hard-filter.vcf.gz"
+snpeff="/fs/ess/PCON0160/ben/pipelines/snpEff/snpEff.jar"
+db="c_elegans.WS283"
+
+# run name 
+name=$(basename $vcf .gz)
+
+# make output dir if necessary
+[ ! -d $output ] && mkdir -p $output
+[ ! -d $sbatch ] && mkdir -p $sbatch
+
+# SLURM directives
+time="12:00:00"
+nodes="1"
+tasks_per_node="40"
+memory="128gb"
+account="PCON0160"
+
+echo """#!/bin/bash
+
+#SBATCH --job-name=$name\_snpEff
+#SBATCH --time=$time
+#SBATCH --output=$name.out
+#SBATCH --nodes=$nodes
+#SBATCH --ntasks-per-node=$tasks_per_node
+#SBATCH --mem=$memory
+#SBATCH --account=$account
+
+module load java/12.0.2
+
+cd $curr_dir
+
+java -Xmx110g -jar $snpeff \
+    -v \
+    -no-downstream \
+    -no-intergenic \
+    -no-upstream \
+    -onlyProtein \
+    -ud 0 \
+    $db \
+    $vcf \
+    > $output/$name.ann.vcf
+
+""" > $output/$name.$db.sbatch
+
+sbatch $output/$name.$db.sbatch
