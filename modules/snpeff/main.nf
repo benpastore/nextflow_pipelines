@@ -15,7 +15,7 @@ process BUILD_SNPEFF_DB {
     
     module load java/21.0.2
 
-    db_name=$(basename ${params.genome} .fa)
+    db_name=\$(basename ${params.genome} .fa)
     db_dir=${params.snpEff_data}/data/\$db_name
     mkdir \$db_dir
     cp ${params.genome} \$db_dir/sequences.fa
@@ -49,8 +49,8 @@ process RUN_SNPEFF {
     
     module load java/21.0.2
     
-    db_name=$(basename ${params.genome} .fa)
-    vcf_base=$(basename ${vcf} .vcf)
+    db_name=\$(basename ${params.genome} .fa)
+    vcf_base=\$(basename ${vcf} .vcf)
 
     zcat ${vcf} | cut -f1-8 > temp.vcf
     java -Xmx110g -jar ${params.snpEff_data}/snpEff.jar \

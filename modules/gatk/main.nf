@@ -358,7 +358,7 @@ process HARD_FILTER {
         tuple path("hard-filter.${date}.vcf.gz"), path("hard-filter.${date}.vcf.gz.csi"), emit: 'vcf'
         path "hard-filter.${date}.vcf.gz.tbi"
         path "hard-filter.${date}.stats.txt", emit: 'hard_vcf_stats'
-        path("*.vcf.gz"), emit: vcf
+        path("*.vcf.gz"), emit: hard_filter_vcf
 
     script:
     """

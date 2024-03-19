@@ -275,12 +275,12 @@ workflow {
             .out
             .for_report
             .combine(SOFT_FILTER.out.soft_report)
-            .combine(SOFT_FILTER.out.hard_vcf_stats)| HTML_REPORT
+            .combine(HARD_FILTER.out.hard_vcf_stats)| HTML_REPORT
 
         snp_eff_input = CONCATENATE_VCF
             .out
             .vcf
-            .mix(SOFT_FILTER.out.vcf, HARD_FILTER.out.vcf)
+            .mix(SOFT_FILTER.out.vcf, HARD_FILTER.out.hard_filter_vcf)
             .flatten()
         
         BUILD_SNPEFF_DB( params.genome, params.gtf )
