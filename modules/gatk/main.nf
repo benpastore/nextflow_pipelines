@@ -295,3 +295,139 @@ process MULTIQC {
     """
 
 }
+
+process SOFT_FILTER {
+    label "WIGATK"
+
+    publishDir "$params.results/vcfs", mode : 'copy', pattern : '*vcf*'
+    
+    input:
+        tuple val(vcf), val(vcf_index), val(fa), val(fai), val(dict)
+    output:
+        tuple path("soft-filter.${date}.vcf.gz"), path("soft-filter.${date}.vcf.gz.csi"), emit: soft_filter_vcf
+        path "soft-filter.${date}.vcf.gz.tbi"
+        path "soft-filter.${date}.stats.txt", emit: 'soft_vcf_stats'
+        tuple path("soft-filter.${date}.filter_stats.txt"), path("soft-filter.${date}.stats.txt"), emit: 'soft_report'
+        path("*.vcf.gz"), emit: vcf
+    
+    script:
+    """
+    #!/bin/bash
+
+    function cleanup {
+        rm out.vcf.gz
+    }
+    trap cleanup EXIT
+    gatk --java-options "-Xmx${task.memory.toGiga()}g -Xms1g" \\
+        VariantFiltration \\
+        -R ${fa} \\
+        --variant ${vcf} \\
+        --genotype-filter-expression "DP < ${params.min_depth}"    --genotype-filter-name "DP_min_depth" \\
+        --filter-expression "QUAL < ${params.qual}"                --filter-name "QUAL_quality" \\
+        --filter-expression "FS > ${params.fisherstrand}"          --filter-name "FS_fisherstrand" \\
+        --filter-expression "QD < ${params.quality_by_depth}"      --filter-name "QD_quality_by_depth" \\
+        --filter-expression "SOR > ${params.strand_odds_ratio}"    --filter-name "SOR_strand_odds_ratio" \\
+        --genotype-filter-expression "isHet == 1"                  --genotype-filter-name "is_het" \\
+        -O out.vcf
+    
+    bgzip out.vcf
+    bcftools index --tbi out.vcf.gz
+    
+    # Apply high missing and high heterozygosity filters
+    bcftools filter --threads ${task.cpus} --soft-filter='high_missing' --mode + --include 'F_MISSING  <= ${params.high_missing}' out.vcf.gz |\\
+    bcftools filter --threads ${task.cpus} --soft-filter='high_heterozygosity' --mode + --include '( COUNT(GT="het") / N_SAMPLES ) <= ${params.high_heterozygosity}' -O z > soft-filter.${date}.vcf.gz
+    bcftools index soft-filter.${date}.vcf.gz
+    bcftools index --tbi soft-filter.${date}.vcf.gz
+    bcftools stats --threads ${task.cpus} \\
+                   -s- --verbose soft-filter.${date}.vcf.gz > soft-filter.${date}.stats.txt
+    {
+        echo -e 'QUAL\\tQD\\tSOR\\tFS\\tFILTER';
+        bcftools query -f '%QUAL\t%INFO/QD\t%INFO/SOR\t%INFO/FS\t%FILTER\n' soft-filter.${date}.vcf.gz;
+    }     > soft-filter.${date}.filter_stats.txt
+    """
+}
+
+process HARD_FILTER {
+    label "WIGATK"
+
+    publishDir "$params.results/vcfs", mode : 'copy', pattern : '*vcf*'
+
+    input:
+        tuple val(vcf), val(vcf_index), val(contigs)
+    output:
+        tuple path("hard-filter.${date}.vcf.gz"), path("hard-filter.${date}.vcf.gz.csi"), emit: 'vcf'
+        path "hard-filter.${date}.vcf.gz.tbi"
+        path "hard-filter.${date}.stats.txt", emit: 'hard_vcf_stats'
+        path("*.vcf.gz"), emit: vcf
+
+    script:
+    """
+    #!/bin/bash
+
+    function cleanup {
+            # cleanup files on completion
+            rm I.vcf.gz II.vcf.gz III.vcf.gz IV.vcf.gz V.vcf.gz X.vcf.gz MtDNA.vcf.gz
+        }
+        trap cleanup EXIT
+
+        # Generate hard-filtered VCF
+        function generate_hard_filter {
+
+        if [ \${1} == "${params.mito_name}" ]
+
+        then
+            bcftools view -m2 -M2 --trim-alt-alleles -O u --regions \${1} ${vcf} |\\
+            bcftools filter -O u --set-GTs . --exclude 'FORMAT/FT ~ "DP_min_depth"' |\\
+            bcftools filter -O u --exclude 'FILTER != "PASS"' |\\
+            bcftools view -O v --min-af 0.000001 --max-af 0.999999 |\\
+            vcffixup - | \\
+            bcftools view -O z --trim-alt-alleles > \${1}.vcf.gz
+
+        else
+            bcftools view -m2 -M2 --trim-alt-alleles -O u --regions \${1} ${vcf} |\\
+            bcftools filter -O u --set-GTs . --exclude 'FORMAT/FT ~ "DP_min_depth" | FORMAT/FT ~"is_het"' |\\
+            bcftools filter -O u --exclude 'FILTER != "PASS"' |\\
+            bcftools view -O v --min-af 0.000001 --max-af 0.999999 |\\
+            vcffixup - | \\
+            bcftools view -O z --trim-alt-alleles > \${1}.vcf.gz
+        fi
+
+        }
+
+        export -f generate_hard_filter
+
+        parallel --verbose generate_hard_filter :::: ${contigs}
+
+
+        awk '{ print \$0 ".vcf.gz" }' ${contigs} > contig_set.tsv
+        bcftools concat  -O z --file-list contig_set.tsv > hard-filter.${date}.vcf.gz
+
+        bcftools index hard-filter.${date}.vcf.gz
+        bcftools index --tbi hard-filter.${date}.vcf.gz
+        bcftools stats -s- --verbose hard-filter.${date}.vcf.gz > hard-filter.${date}.stats.txt
+    """
+}
+
+process HTML_REPORT {
+
+    container 'andersenlab/r_packages:latest'
+
+    publishDir "$params.results/html_report", mode: 'copy'
+
+    input:
+        tuple path("multiqc.html"), path("soft_filter_filter"), path("soft_filter_stats"), path("hard_filter_stats")
+
+    output:
+        file("*.html")
+
+    """
+    cat "${workflow.projectDir}/bin/gatk_report.Rmd" | \\
+        sed -e 's/RELEASE_DATE/${date}/g' |
+        sed -e 's+variation/WI.{vcf_date}.soft-filter.stats.txt+${soft_filter_stats}+g' |
+        sed -e 's+variation/WI.{vcf_date}.hard-filter.stats.txt+${hard_filter_stats}+g' |
+        sed -e 's+variation/WI.{vcf_date}.soft-filter.filter_stats.txt+${soft_filter_filter}+g' > gatk_report_${date}.Rmd
+    Rscript -e "rmarkdown::render('gatk_report_${date}.Rmd')"
+        
+    """
+
+}

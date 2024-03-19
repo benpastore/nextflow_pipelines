@@ -94,7 +94,11 @@ include { IMPORT_GENOME_DB } from '../../modules/gatk/main.nf'
 include { CONCATENATE_VCF } from '../../modules/gatk/main.nf'
 include { GATK_GENOTYPE_COHORT } from '../../modules/gatk/main.nf'
 include { MULTIQC } from '../../modules/gatk/main.nf'
-
+include { BUILD_SNPEFF_DB } from '../../modules/snpeff/main.nf'
+include { RUN_SNPEFF } from '../../modules/snpeff/main.nf'
+include { SOFT_FILTER } from '../../modules/gatk/main.nf'
+include { HARD_FILTER } from '../../modules/gatk/main.nf'
+include { HTML_REPORT } from '../../modules/gatk/main.nf'
 
 
 /*
@@ -102,8 +106,9 @@ include { MULTIQC } from '../../modules/gatk/main.nf'
 Workflow
 ////////////////////////////////////////////////////////////////////
 */
+date = new Date().format( 'yyyyMMdd' )
 workflow {
-
+    
     /*
      * Trim reads of adapters and low quality sequences
      */
@@ -255,24 +260,34 @@ workflow {
         // combine vcf
         GATK_GENOTYPE_COHORT.out.genotype_cohort_gvcf_db_out.collect() | CONCATENATE_VCF
         
-        /*
+        CONCATENATE_VCF.out.vcf.combine(GATK_PREPARE_GENOME.out.processed_genome) | SOFT_FILTER
+        SOFT_FILTER.out.soft_filter_vcf.combine(contigs) | HARD_FILTER
+
         // filters
-        soft_filter
+        SOFT_FILTER
             .out
             .soft_vcf_stats.concat(
-                hard_filter.out.hard_vcf_stats
+                HARD_FILTER.out.hard_vcf_stats
                 )
-                .collect() | multiqc_report
+                .collect() | MULTIQC
                 
-        multiqc_report
+        MULTIQC
             .out
             .for_report
-            .combine(soft_filter.out.soft_report)
-            .combine(hard_filter.out.hard_vcf_stats)| html_report
-        */
+            .combine(SOFT_FILTER.out.soft_report)
+            .combine(SOFT_FILTER.out.hard_vcf_stats)| HTML_REPORT
+
+        snp_eff_input = CONCATENATE_VCF
+            .out
+            .vcf
+            .mix(SOFT_FILTER.out.vcf, HARD_FILTER.out.vcf)
+            .flatten()
+        
+        BUILD_SNPEFF_DB( params.genome, params.gtf )
+
+        RUN_SNPEFF( snp_eff_input, BUILD_SNPEFF_DB.out.genome )
 
     }
-
 
     /*
     // SNP EFF *** add code for SnpEff https://pcingola.github.io/SnpEff/snpeff/introduction/ ***
@@ -313,7 +328,5 @@ workflow {
         EXPANSION_HUNTER( variant_caller_input, params.genome )
     }
 
-    
-    
     // Indel caller
 }
