@@ -49,6 +49,11 @@ process BWA_MEM {
     
     script :
     fastq_command = params.single_end ? "${fastq}" : "${fastq[0]} ${fastq[1]}" 
+    RG = ["@RG",
+        "ID:${sampleID}",
+        "SM:${sampleID}",
+        "LB:1}",
+        "PL:illumina"].join("\\t")
     """
     #!/bin/bash
 

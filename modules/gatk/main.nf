@@ -66,7 +66,7 @@ process GATK_PROCESS_BAM {
 
     gatk MarkDuplicates -I ${bam} -O \$name.dups.bam -M \$name.dups.txt
 
-    gatk AddOrReplaceReadGroups -I \$name.dups.bam -O \$name.dups.grouped.bam -RGID 4 -RGLB lib1 -RGPL ILLUMINA -RGPU unit1 -RGSM 20
+    gatk AddOrReplaceReadGroups -I \$name.dups.bam -O \$name.dups.grouped.bam -RGID ${sampleID} -RGLB lib1 -RGPL ILLUMINA -RGPU unit1 -RGSM 20
     
     samtools index \$name.dups.grouped.bam
 
@@ -364,7 +364,7 @@ process HARD_FILTER {
         tuple path("hard-filter.${params.date}.vcf.gz"), path("hard-filter.${params.date}.vcf.gz.csi"), emit: 'vcf'
         path "hard-filter.${params.date}.vcf.gz.tbi"
         path "hard-filter.${params.date}.stats.txt", emit: 'hard_vcf_stats'
-        path("*hard-filter*.vcf.gz"), emit : hard_filter_hard_filter_vcf
+        path("*hard-filter*.vcf.gz"), emit : hard_filter_vcf
 
     script:
     """

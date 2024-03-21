@@ -14,7 +14,7 @@ process BUILD_SNPEFF_DB {
     """
     #!/bin/bash
 
-    db_name=\\$(basename ${params.genome} .fa)
+    db_name=\$(basename ${params.genome} .fa)
     db_dir=${params.snpEff_data}/data/\$db_name
     
     mkdir -p \$db_dir

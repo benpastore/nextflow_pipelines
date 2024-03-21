@@ -20,7 +20,7 @@ process FILTER_BAM {
     script:
     filter_params = params.single_end ? '-F 0x004' : '-F 0x004 -F 0x0008 -f 0x001'
     dup_params = params.keep_dups ? '' : '-F 0x0400'
-    multimap_params = params.keep_multi_map ? '' : '-q 1'
+    multimap_params = params.keep_multi_map ? '' : '-q 20'
     blacklist_params = params.blacklist ? "-L $bed" : ''
     remove_orphan = params.remove_orphan && !params.single_end ? "-f 0x2" : ''
     select_primary = params.select_primary ? "-F 0x0100" : ''

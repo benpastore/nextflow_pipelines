@@ -42,19 +42,6 @@ Check bwa index is made
 * This part is setting up for the default values of the input (we can always change these value in the command line 
 * in the run.sh in the sam_cendr folder). However, we DO NOT want to change these params
 */
-genome_fasta = file("${params.genome}")
-genome_name = "${genome_fasta.baseName}"
-params.bwa_index_path = "${params.index}/bwa/${genome_name}"
-params.bwa_index = "${params.bwa_index_path}/${genome_name}"
-params.bwa_chrom_sizes = "${params.bwa_index_path}/chrom_sizes.txt"
-
-bwa_exists = file(params.bwa_index_path).exists()
-
-if (bwa_exists == true){
-    params.bwa_build = false
-} else {
-    params.bwa_build = true
-}
 
 /*
 ////////////////////////////////////////////////////////////////////
@@ -183,6 +170,20 @@ workflow bwa_align {
     take : data
 
     main :
+        genome_fasta = file("${params.genome}")
+        genome_name = "${genome_fasta.baseName}"
+        params.bwa_index_path = "${params.index}/bwa/${genome_name}"
+        params.bwa_index = "${params.bwa_index_path}/${genome_name}"
+        params.bwa_chrom_sizes = "${params.bwa_index_path}/chrom_sizes.txt"
+
+        bwa_exists = file(params.bwa_index_path).exists()
+
+        if (bwa_exists == true){
+            params.bwa_build = false
+        } else {
+            params.bwa_build = true
+        }
+
         if (params.bwa_build == true){
 
             BWA_INDEX( params.genome )
@@ -198,6 +199,44 @@ workflow bwa_align {
     
     emit :
         bams = BWA_MEM.out.bwa_bam_bai_ch
+}
+
+workflow star_align {
+
+    take : 
+        data 
+    
+    main : 
+        genome_fasta = file("${params.genome}")
+        genome_name = "${genome_fasta.baseName}"
+        params.star_index_path = "${params.index}/star/${genome_name}"
+        params.star_index = "${params.star_index_path}"
+        params.star_chrom_sizes = "${params.star_index_path}/chrNameLength.txt"
+
+        star_exists = file(params.star_index_path).exists()
+
+        if (star_exists == true){
+            params.star_build = false
+        } else {
+            params.star_build = true
+        }
+
+        if (params.star_build == true){
+
+            STAR_INDEX( params.genome, params.gtf, params.star_index_path )
+            star_index_ch = STAR_INDEX.out.star_idx_ch
+
+        } else {
+
+            star_index_ch = params.star_index 
+        
+        }
+
+        STAR_ALIGN( star_index_ch, params.gtf, data )
+    
+    emit : 
+        bams = STAR_ALIGN.out.star_bam_bai_ch
+
 }
 
 workflow filter_bam {
