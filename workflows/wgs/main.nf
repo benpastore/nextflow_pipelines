@@ -401,8 +401,9 @@ workflow {
         raw_dat = Channel
             .fromPath( "${params.design}/*.bam" )
             .map { bam -> [ bam.SimpleName, bam] }
-
-        bams = index_bam( raw_dat )
+        
+        index_bam( raw_dat )
+        bams = index_bam.out.bams
 
     } else {
 
@@ -411,18 +412,20 @@ workflow {
         raw_dat = read_data_fq.out.reads
 
         if (params.trim_adapters) { 
-            data = trim( raw_dat ) 
+            trim( raw_dat ) 
+            data = trim.out.fqs
         } else { 
-            data = raw_dat 
+            data = raw_dat         
         }
 
-        bwa_align( raw_dat )
-        bams = bwa_align.out.bams
+        bwa_align( data )
 
+        bams = bwa_align.out.bams
     }
 
     if ( params.filter_bam ) { 
-        processed_bam = filter_bam( bams ) 
+        filter_bam( bams ) 
+        processed_bam = filter_bam.out.filter_bam_bai
     } else { 
         processed_bam = bams 
     }
@@ -450,7 +453,8 @@ workflow {
 
             if (params.gatk_filters) {
 
-                filt_vcf = gatk_filters( vcfs, gatk.out.refs, gatk.out.contig_file )
+                gatk_filters( vcfs, gatk.out.refs, gatk.out.contig_file )
+                filt_vcf = gatk_filters.out.vcfs
 
             } else { 
 
