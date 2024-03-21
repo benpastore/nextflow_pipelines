@@ -1,2 +1,19 @@
 2022-09-27 13:41:05	-	naughty_heisenberg	-	8d7b6f4fde7fc5ea12ddc7656cdd1457	d156a349-163d-4369-923f-118015b1f3a8	nextflow /fs/ess/PCON0160/ben/pipelines/nextflow_pipelines/workflows/chip/main.nf --results /fs/ess/PCON0160/ben/projects/piRNA_biogenesis/CHIP_results --design /fs/ess/PCON0160/ben/projects/piRNA_biogenesis/samples_pe.csv --single_end false -profile cluster
 2022-09-27 13:43:42	45m 48s	marvelous_easley	ERR	056e2d1dbc04211bc8399c578d73f804	e1272962-24a7-47be-869c-28978afc384a	nextflow /fs/ess/PCON0160/ben/pipelines/nextflow_pipelines/workflows/chip/main.nf --results /fs/ess/PCON0160/ben/projects/piRNA_biogenesis/CHIP_results --design /fs/ess/PCON0160/ben/projects/piRNA_biogenesis/samples_pe.csv --single_end false -profile cluster
+2024-03-20 11:37:04	-	confident_euclid	-	db65fcf8a637875f011d5901bdca0706	373ccbbf-ab3a-4458-beac-785be36902a5	nextflow workflows/wgs/test.nf
+2024-03-20 11:38:02	-	shrivelled_archimedes	-	e817f8fa523819f6a32de41103f8317d	89644a8e-2215-44bd-98e4-65dc19f3afd6	nextflow workflows/wgs/test.nf
+2024-03-20 11:38:30	-	distracted_mendel	-	efe9273522559afde64bd7f66939da29	ff8af9fc-527d-4571-93d8-0fff4a7f8e09	nextflow workflows/wgs/test.nf
+2024-03-20 11:38:45	-	marvelous_sammet	-	38052064940e1ea06d934b90fd835cf9	14e8bc47-b47f-4234-b037-407c61e53b02	nextflow workflows/wgs/test.nf
+2024-03-20 11:38:57	-	romantic_panini	-	6deebef2be838e525ad5071f80a0063c	33812c02-41ca-41f3-b5ec-47f0c58d06f0	nextflow workflows/wgs/test.nf
+2024-03-20 11:39:15	-	determined_jang	-	6deebef2be838e525ad5071f80a0063c	835aefe0-72bf-4d5e-b193-5a9f7875c092	nextflow workflows/wgs/test.nf
+2024-03-20 11:40:07	-	mighty_nobel	-	0ea29cfcb24da1dfcd1f64bf13a6183a	d5dbef8a-d7fa-4a4e-a96b-51a080a2866e	nextflow workflows/wgs/test.nf
+2024-03-20 11:41:05	-	pensive_jones	-	881ae42d3fd5698c6bb337c79f500bab	bd6bfc2e-06f3-4396-a4c1-505c1d7517d1	nextflow workflows/wgs/test.nf
+2024-03-20 11:41:27	-	cheeky_church	-	7e5455836f7a98f0dc36ad21741126ec	ffc66b71-722c-4847-895b-e20c025722a1	nextflow workflows/wgs/test.nf
+2024-03-20 11:41:44	22.3s	angry_payne	ERR	3fe9c1d62b2682d97919fd64646d9998	d75bb14a-7149-495f-8183-01221cd35294	nextflow workflows/wgs/test.nf
+2024-03-20 11:42:28	2.5s	soggy_hodgkin	ERR	2915744351dce91e546f96123ac5c564	6c245c88-0cf1-474f-a530-9a63f72f66d6	nextflow workflows/wgs/test.nf
+2024-03-20 11:43:08	2.7s	grave_pare	OK	0f0b38adb4c5294317b64a9029748fd0	77fc343c-e882-412a-b132-124efc5f278d	nextflow workflows/wgs/test.nf
+2024-03-20 12:57:59	3s	serene_ramanujan	OK	ecfa874e0a80f47545f5ef4350183abb	caef82c2-86ad-4634-8c3f-75f14660ed7d	nextflow workflows/wgs/test.nf
+2024-03-20 14:10:04	3.8s	distraught_feynman	OK	8586fc5a6f738ecc8b1764b89329a88c	5876d760-3690-4662-86bb-07e8c9047f56	nextflow run workflows/wgs/test.nf
+2024-03-20 14:14:43	3.2s	gigantic_goodall	OK	8b2eb150e1bea3057ec3276693dd61b0	82d1a7f9-ba83-4527-930b-1505e1d5b999	nextflow run workflows/wgs/test.nf
+2024-03-20 14:16:36	3.7s	distracted_chandrasekhar	OK	e1e90fec3760bb9588d97a178f505424	ebb10ee1-e58a-4e4e-92d9-b87244f1afe7	nextflow run workflows/wgs/test.nf
+2024-03-20 14:18:15	3.5s	lonely_tesla	OK	6f610e702e9d1b0633e058cf086778ce	5fe627c0-b28f-44f5-8903-b2668ded9052	nextflow run workflows/wgs/test.nf

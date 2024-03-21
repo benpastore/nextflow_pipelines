@@ -11,9 +11,10 @@ process DEEPVARIANT_CALL_VARIANTS {
         val genome
 
     output : 
-        tuple val(condition), val("*.vcf"), emit : deepvariant_vcf_ch
-        tuple val(condition), val("*.gvcf"), emit : deepvariant_gvcf_ch
+        tuple val(condition), val("*.vcf.gz"), emit : deepvariant_vcf_ch
+        tuple val(condition), val("*.gvcf.gz"), emit : deepvariant_gvcf_ch
         path("*")
+        path("*vcf.gz"), emit : vcf
     
     script:
     """
@@ -31,6 +32,8 @@ process DEEPVARIANT_CALL_VARIANTS {
         --output_gvcf=${condition}.dv.gvcf \\
         --num_shards=${task.cpus} \\
         --logging_dir=\$PWD/${condition}_dv_logs
+
+    gzip *vcf*
         
     """   
 }

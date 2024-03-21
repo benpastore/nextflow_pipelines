@@ -4,7 +4,13 @@
 *.out
 *.nextflow*
 *sailor*
+*.fa
+*.gtf
+*.gff
+*.gff3
+*.gff3
 
 singularity/
 index/
 .nextflow/
+snpEff/data/

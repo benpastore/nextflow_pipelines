@@ -48,3 +48,30 @@ process FILTER_BAM {
     samtools stats \$name.filtered.sorted.bam > \$name.filtered.sorted.stats
     """   
 }
+
+process INDEX_BAM {
+
+    tag "${condition}_index_bam"
+
+    label 'high'
+
+    publishDir "$params.results/bams", mode : 'copy', pattern : '*.bam*'
+
+    input : 
+        tuple val(condition), val(bam)
+
+    output : 
+        tuple val(condition), path("*.bam"), path("*bai")
+    
+    script :
+    """
+    #!/bin/bash
+
+    source activate rnaseq
+
+    cp ${bam} .
+    name=\$(basename ${bam})
+    samtools index \$name 
+    
+    """
+}

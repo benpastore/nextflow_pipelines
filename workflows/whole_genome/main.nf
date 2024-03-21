@@ -100,7 +100,6 @@ include { SOFT_FILTER } from '../../modules/gatk/main.nf'
 include { HARD_FILTER } from '../../modules/gatk/main.nf'
 include { HTML_REPORT } from '../../modules/gatk/main.nf'
 
-
 /*
 ////////////////////////////////////////////////////////////////////
 Workflow
@@ -157,11 +156,9 @@ workflow {
      * Align with bwa
      */
     BWA_MEM( bwa_index_ch, fq_ch )
-    // 
 
     /*
      * Filter merged bam files
-     * Some code used and inspired from https://github.com/nf-core/chipseq
      */
 
     if ( params.filter_bam ){
@@ -193,7 +190,6 @@ workflow {
 
         // general structure follows pipeline found at https://github.com/AndersenLab/wi-gatk
         // with some modifications to better fit my existing pipeline.
-
         /*
         * Get contigs
         */
@@ -221,13 +217,13 @@ workflow {
             .combine( GATK_PREPARE_GENOME.out.processed_genome )
 
         //println "Contigs:"
-        contigs.view()
+        //contigs.view()
         //println "Prepared Genome:"
         //GATK_PREPARE_GENOME.out.processed_genome.view()
         //println "Processed BAM:"
         //GATK_PROCESS_BAM.out.processed_bam_ch.view()
         //println "Variant caller input:"
-       //variant_caller_input.view()
+        //variant_caller_input.view()
 
         // GATK
         GATK_CALL_VARIANTS( variant_caller_input )
@@ -275,12 +271,12 @@ workflow {
             .out
             .for_report
             .combine(SOFT_FILTER.out.soft_report)
-            .combine(SOFT_FILTER.out.hard_vcf_stats)| HTML_REPORT
+            .combine(HARD_FILTER.out.hard_vcf_stats)| HTML_REPORT
 
         snp_eff_input = CONCATENATE_VCF
             .out
             .vcf
-            .mix(SOFT_FILTER.out.vcf, HARD_FILTER.out.vcf)
+            .mix(SOFT_FILTER.out.vcf, HARD_FILTER.out.hard_filter_vcf)
             .flatten()
         
         BUILD_SNPEFF_DB( params.genome, params.gtf )
@@ -288,40 +284,6 @@ workflow {
         RUN_SNPEFF( snp_eff_input, BUILD_SNPEFF_DB.out.genome )
 
     }
-
-    /*
-    // SNP EFF *** add code for SnpEff https://pcingola.github.io/SnpEff/snpeff/introduction/ ***
-    Step 1. building snp eff database
-    https://pcingola.github.io/SnpEff/snpeff/build_db/#step-2-option-1-building-a-database-from-gtf-files
-
-    1. Make directory for new genome
-    2. put annotation files in directory (gtf file, genome reference)
-    3. add information to genome configuration file
-
-    cd /path/to/snpEff
-    java -jar snpEff.jar build -gft22 -v c_elegans.WS283
-
-    Step 2. Running SNPEff
-    curr_dir=$PWD
-    output="$curr_dir/WI.20220216.hard-filter_v2"
-    sbatch="$curr_dir/sbatch"
-    vcf="/fs/ess/PCON0160/CaeNDR/WI.20220216.hard-filter.vcf.gz"
-    snpeff="/fs/ess/PCON0160/ben/pipelines/snpEff/snpEff.jar"
-    db="c_elegans.WS283"
-
-    java -Xmx110g -jar $snpeff \
-        -v \
-        -no-downstream \
-        -no-intergenic \
-        -no-upstream \
-        -onlyProtein \
-        -ud 0 \
-        $db \
-        $vcf \
-        > $output/$name.ann.vcf
-
-
-    */
 
     if ( params.run_expansion_hunter ) {
         // Repeat Expansion

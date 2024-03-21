@@ -1,5 +1,6 @@
 process BUILD_SNPEFF_DB {
-    label "high"
+
+    label "snpeff"
 
     input:
         val genome
@@ -7,33 +8,40 @@ process BUILD_SNPEFF_DB {
 
     output:
         path("*")
-        path(genome), emit : genome
+        path("sequences.fa"), emit : genome
 
     script:
     """
     #!/bin/bash
-    
-    module load java/21.0.2
 
-    db_name=$(basename ${params.genome} .fa)
+    db_name=\$(basename ${params.genome} .fa)
     db_dir=${params.snpEff_data}/data/\$db_name
-    mkdir \$db_dir
+    
+    mkdir -p \$db_dir
+    
     cp ${params.genome} \$db_dir/sequences.fa
-    cp ${params.gtf} \$db_dir/sequences.fa
-    echo "\$db_name : ${params.organism}" > temp.config
-    cat ${params.snpEff_data}/snpEff.config temp.config 
+    cp ${params.genome} ./sequences.fa
+    cat ${params.protein} | sed -e 's/ wormpep=.*/.1/g' > \$db_dir/protein.fa
+    cat ${params.cds} | sed -e 's/ gene=.*/.1/g' > \$db_dir/cds.fa
+    cp ${params.gtf} \$db_dir/genes.gtf
+
+    echo "\$db_name.genome : ${params.organism}" > temp.config
+    
+    cat ${params.snpEff_data}/snpEff.config temp.config > ${params.snpEff_data}/snpEff.config
+
     cd ${params.snpEff_data}
     
-    java -jar ${params.snpEff_data}/snpEff.jar build -gft22 -v \$db_name
+    java -jar ${params.snpEff_data}/snpEff.jar build -gtf22 -v \$db_name
 
     """
 }
 
 
 process RUN_SNPEFF {
-    label ""
 
-    publishDir "$params.results/snp_Eff", mode : 'copy', pattern : '*'
+    label "snpeff"
+
+    publishDir "$params.results/SNPEFF", mode : 'copy', pattern : '*'
 
     input:
         val vcf
@@ -47,12 +55,12 @@ process RUN_SNPEFF {
     """
     #!/bin/bash
     
-    module load java/21.0.2
-    
-    db_name=$(basename ${params.genome} .fa)
-    vcf_base=$(basename ${vcf} .vcf)
+    db_name=\$(basename ${params.genome} .fa)
 
-    zcat ${vcf} | cut -f1-8 > temp.vcf
+    vcfbase=\$(basename ${vcf} .vcf.gz)
+
+    zcat ${vcf} | cut -f1-8 > tmp
+
     java -Xmx110g -jar ${params.snpEff_data}/snpEff.jar \
             -v \
             -no-downstream \
@@ -61,7 +69,7 @@ process RUN_SNPEFF {
             -onlyProtein \
             -ud 0 \
             \$db_name \
-            temp.vcf > \$vcf_base.snpEff.vcf
+            tmp > \$vcfbase.snpEff.vcf
             
     """
 
