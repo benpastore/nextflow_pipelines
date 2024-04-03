@@ -11,7 +11,7 @@
 *.gff3
 .nextflow.log*
 
-snpEff/data
+snpEff/data/*
 singularity/
 index/
 .nextflow/
