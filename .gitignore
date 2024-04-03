@@ -9,6 +9,7 @@
 *.gff
 *.gff3
 *.gff3
+.nextflow.log*
 
 singularity/
 index/
