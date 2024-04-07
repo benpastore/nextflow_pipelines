@@ -1,49 +1,82 @@
-Mar-20 14:18:12.904 [main] DEBUG nextflow.cli.Launcher - $> nextflow run workflows/wgs/test.nf
-Mar-20 14:18:13.152 [main] INFO  nextflow.cli.CmdRun - N E X T F L O W  ~  version 21.04.3
-Mar-20 14:18:13.204 [main] INFO  nextflow.cli.CmdRun - Launching `workflows/wgs/test.nf` [lonely_tesla] - revision: 6f610e702e
-Mar-20 14:18:13.233 [main] DEBUG nextflow.config.ConfigBuilder - Found config base: /fs/ess/PCON0160/ben/pipelines/nextflow_pipelines/workflows/wgs/nextflow.config
-Mar-20 14:18:13.235 [main] DEBUG nextflow.config.ConfigBuilder - Parsing config file: /fs/ess/PCON0160/ben/pipelines/nextflow_pipelines/workflows/wgs/nextflow.config
-Mar-20 14:18:13.292 [main] DEBUG nextflow.config.ConfigBuilder - Applying config profile: `standard`
-Mar-20 14:18:15.372 [main] DEBUG nextflow.plugin.PluginsFacade - Setting up plugin manager > mode=prod; plugins-dir=/users/PAS1473/benpasto1/.nextflow/plugins
-Mar-20 14:18:15.374 [main] DEBUG nextflow.plugin.PluginsFacade - Plugins default=[]
-Mar-20 14:18:15.377 [main] DEBUG nextflow.plugin.PluginsFacade - Plugins local root: .nextflow/plr/empty
-Mar-20 14:18:15.390 [main] INFO  org.pf4j.DefaultPluginStatusProvider - Enabled plugins: []
-Mar-20 14:18:15.394 [main] INFO  org.pf4j.DefaultPluginStatusProvider - Disabled plugins: []
-Mar-20 14:18:15.402 [main] INFO  org.pf4j.DefaultPluginManager - PF4J version 3.4.1 in 'deployment' mode
-Mar-20 14:18:15.429 [main] INFO  org.pf4j.AbstractPluginManager - No plugins
-Mar-20 14:18:15.504 [main] DEBUG nextflow.Session - Session uuid: 5fe627c0-b28f-44f5-8903-b2668ded9052
-Mar-20 14:18:15.504 [main] DEBUG nextflow.Session - Run name: lonely_tesla
-Mar-20 14:18:15.505 [main] DEBUG nextflow.Session - Executor pool size: 2
-Mar-20 14:18:15.559 [main] DEBUG nextflow.cli.CmdRun - 
+Mar-30 15:18:30.959 [main] DEBUG nextflow.cli.Launcher - $> nextflow run workflows/wgs/main2.nf
+Mar-30 15:18:31.067 [main] INFO  nextflow.cli.CmdRun - N E X T F L O W  ~  version 21.04.3
+Mar-30 15:18:31.088 [main] INFO  nextflow.cli.CmdRun - Launching `workflows/wgs/main2.nf` [astonishing_pauling] - revision: ef93b823ed
+Mar-30 15:18:31.099 [main] DEBUG nextflow.config.ConfigBuilder - Found config base: /fs/ess/PCON0160/ben/pipelines/nextflow_pipelines/workflows/wgs/nextflow.config
+Mar-30 15:18:31.100 [main] DEBUG nextflow.config.ConfigBuilder - Parsing config file: /fs/ess/PCON0160/ben/pipelines/nextflow_pipelines/workflows/wgs/nextflow.config
+Mar-30 15:18:31.115 [main] DEBUG nextflow.config.ConfigBuilder - Applying config profile: `standard`
+Mar-30 15:18:31.925 [main] DEBUG nextflow.plugin.PluginsFacade - Setting up plugin manager > mode=prod; plugins-dir=/users/PAS1473/benpasto1/.nextflow/plugins
+Mar-30 15:18:31.926 [main] DEBUG nextflow.plugin.PluginsFacade - Plugins default=[]
+Mar-30 15:18:31.928 [main] DEBUG nextflow.plugin.PluginsFacade - Plugins local root: .nextflow/plr/empty
+Mar-30 15:18:31.934 [main] INFO  org.pf4j.DefaultPluginStatusProvider - Enabled plugins: []
+Mar-30 15:18:31.935 [main] INFO  org.pf4j.DefaultPluginStatusProvider - Disabled plugins: []
+Mar-30 15:18:31.938 [main] INFO  org.pf4j.DefaultPluginManager - PF4J version 3.4.1 in 'deployment' mode
+Mar-30 15:18:31.946 [main] INFO  org.pf4j.AbstractPluginManager - No plugins
+Mar-30 15:18:31.985 [main] DEBUG nextflow.Session - Session uuid: 86af2495-95db-4d3c-aa9b-04a568a6e8e9
+Mar-30 15:18:31.985 [main] DEBUG nextflow.Session - Run name: astonishing_pauling
+Mar-30 15:18:31.986 [main] DEBUG nextflow.Session - Executor pool size: 7
+Mar-30 15:18:32.011 [main] DEBUG nextflow.cli.CmdRun - 
   Version: 21.04.3 build 5560
   Created: 21-07-2021 15:09 UTC (11:09 EDT)
-  System: Linux 3.10.0-1160.102.1.el7.x86_64
-  Runtime: Groovy 3.0.7 on OpenJDK 64-Bit Server VM 1.8.0_392-b08
+  System: Linux 3.10.0-1160.108.1.el7.x86_64
+  Runtime: Groovy 3.0.7 on OpenJDK 64-Bit Server VM 1.8.0_402-b06
   Encoding: UTF-8 (UTF-8)
-  Process: 82111@p0133.ten.osc.edu [10.4.3.26]
-  CPUs: 1 - Mem: 4.4 GB (582.9 MB) - Swap: 0 (0)
-Mar-20 14:18:15.611 [main] DEBUG nextflow.Session - Work-dir: /fs/scratch/PCON0160 [gpfs]
-Mar-20 14:18:15.611 [main] DEBUG nextflow.Session - Script base path does not exist or is not a directory: /fs/ess/PCON0160/ben/pipelines/nextflow_pipelines/workflows/wgs/bin
-Mar-20 14:18:15.620 [main] DEBUG nextflow.executor.ExecutorFactory - Extension executors providers=[]
-Mar-20 14:18:15.638 [main] DEBUG nextflow.Session - Observer factory: DefaultObserverFactory
-Mar-20 14:18:15.974 [main] DEBUG nextflow.Session - Session start invoked
-Mar-20 14:18:16.535 [main] DEBUG nextflow.script.ScriptRunner - > Launching execution
-Mar-20 14:18:16.640 [main] DEBUG nextflow.Session - Workflow process names [dsl2]: RETURN_NAME
-Mar-20 14:18:16.644 [main] INFO  nextflow.script.BaseScript - true
-Mar-20 14:18:16.779 [main] DEBUG nextflow.executor.ExecutorFactory - << taskConfig executor: local
-Mar-20 14:18:16.782 [main] DEBUG nextflow.executor.ExecutorFactory - >> processorType: 'local'
-Mar-20 14:18:16.787 [main] DEBUG nextflow.executor.Executor - [warm up] executor > local
-Mar-20 14:18:16.804 [main] DEBUG n.processor.LocalPollingMonitor - Creating local task monitor for executor 'local' > cpus=1; memory=4.4 GB; capacity=1; pollInterval=100ms; dumpInterval=5m
-Mar-20 14:18:17.128 [main] DEBUG nextflow.Session - Ignite dataflow network (1)
-Mar-20 14:18:17.129 [main] DEBUG nextflow.processor.TaskProcessor - Starting process > print_it:RETURN_NAME
-Mar-20 14:18:17.154 [main] DEBUG nextflow.script.ScriptRunner - > Await termination 
-Mar-20 14:18:17.154 [main] DEBUG nextflow.Session - Session await
-Mar-20 14:18:17.295 [Actor Thread 4] DEBUG nextflow.container.SingularityCache - Singularity found local store for image=docker://benpasto/rnaseq:latest; path=/fs/ess/PCON0160/ben/pipelines/nextflow_pipelines/workflows/wgs/singularity/benpasto-rnaseq-latest.img
-Mar-20 14:18:17.435 [Task submitter] DEBUG nextflow.executor.LocalTaskHandler - Launch cmd line: /bin/bash -ue .command.run
-Mar-20 14:18:17.454 [Task submitter] INFO  nextflow.Session - [e0/719419] Submitted process > print_it:RETURN_NAME (local)
-Mar-20 14:18:18.189 [Task monitor] DEBUG n.processor.TaskPollingMonitor - Task completed > TaskHandler[id: 1; name: print_it:RETURN_NAME (local); status: COMPLETED; exit: 0; error: -; workDir: /fs/scratch/PCON0160/e0/719419a80fae669ef27378b2d77000]
-Mar-20 14:18:18.213 [main] DEBUG nextflow.Session - Session await > all process finished
-Mar-20 14:18:18.238 [main] DEBUG nextflow.Session - Session await > all barriers passed
-Mar-20 14:18:18.243 [main] DEBUG nextflow.trace.WorkflowStatsObserver - Workflow completed > WorkflowStats[succeededCount=1; failedCount=0; ignoredCount=0; cachedCount=0; pendingCount=0; submittedCount=0; runningCount=0; retriesCount=0; abortedCount=0; succeedDuration=662ms; failedDuration=0ms; cachedDuration=0ms;loadCpus=0; loadMemory=0; peakRunning=1; peakCpus=1; peakMemory=0; ]
-Mar-20 14:18:18.523 [main] DEBUG nextflow.CacheDB - Closing CacheDB done
-Mar-20 14:18:18.536 [main] DEBUG nextflow.script.ScriptRunner - > Execution complete -- Goodbye
+  Process: 191870@pitzer-login02.hpc.osc.edu [192.148.247.177]
+  CPUs: 7 - Mem: 64 GB (63.4 GB) - Swap: 48 GB (48 GB)
+Mar-30 15:18:32.041 [main] DEBUG nextflow.Session - Work-dir: /fs/scratch/PCON0160/ben_wgs_tmp [gpfs]
+Mar-30 15:18:32.041 [main] DEBUG nextflow.Session - Script base path does not exist or is not a directory: /fs/ess/PCON0160/ben/pipelines/nextflow_pipelines/workflows/wgs/bin
+Mar-30 15:18:32.054 [main] DEBUG nextflow.executor.ExecutorFactory - Extension executors providers=[]
+Mar-30 15:18:32.068 [main] DEBUG nextflow.Session - Observer factory: DefaultObserverFactory
+Mar-30 15:18:32.265 [main] DEBUG nextflow.Session - Session start invoked
+Mar-30 15:18:32.439 [main] DEBUG nextflow.script.ScriptRunner - > Launching execution
+Mar-30 15:18:32.457 [main] DEBUG nextflow.Session - Workflow process names [dsl1]: 
+Mar-30 15:18:32.544 [main] DEBUG nextflow.script.ScriptRunner - > Await termination 
+Mar-30 15:18:32.544 [main] DEBUG nextflow.Session - Session await
+Mar-30 15:18:32.544 [main] DEBUG nextflow.Session - Session await > all process finished
+Mar-30 15:18:32.544 [main] DEBUG nextflow.Session - Session await > all barriers passed
+Mar-30 15:18:32.547 [Actor Thread 2] ERROR nextflow.extension.OperatorEx - @unknown
+groovy.lang.MissingPropertyException: No such property: $it for class: Script_48635f6a
+	at org.codehaus.groovy.runtime.ScriptBytecodeAdapter.unwrap(ScriptBytecodeAdapter.java:65)
+	at org.codehaus.groovy.runtime.callsite.PogoGetPropertySite.getProperty(PogoGetPropertySite.java:51)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callGroovyObjectGetProperty(AbstractCallSite.java:341)
+	at Script_48635f6a$_runScript_closure2.doCall(Script_48635f6a:8)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.codehaus.groovy.reflection.CachedMethod.invoke(CachedMethod.java:107)
+	at groovy.lang.MetaMethod.doMethodInvoke(MetaMethod.java:323)
+	at org.codehaus.groovy.runtime.metaclass.ClosureMetaClass.invokeMethod(ClosureMetaClass.java:263)
+	at groovy.lang.MetaClassImpl.invokeMethod(MetaClassImpl.java:1035)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaClassSite.call(PogoMetaClassSite.java:38)
+	at org.codehaus.groovy.runtime.callsite.CallSiteArray.defaultCall(CallSiteArray.java:47)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaClassSite.call(PogoMetaClassSite.java:53)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.call(AbstractCallSite.java:139)
+	at nextflow.extension.MapOp$_apply_closure1.doCall(MapOp.groovy:57)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.codehaus.groovy.reflection.CachedMethod.invoke(CachedMethod.java:107)
+	at groovy.lang.MetaMethod.doMethodInvoke(MetaMethod.java:323)
+	at org.codehaus.groovy.runtime.metaclass.ClosureMetaClass.invokeMethod(ClosureMetaClass.java:263)
+	at groovy.lang.MetaClassImpl.invokeMethod(MetaClassImpl.java:1035)
+	at groovy.lang.Closure.call(Closure.java:412)
+	at groovyx.gpars.dataflow.operator.DataflowOperatorActor.startTask(DataflowOperatorActor.java:120)
+	at groovyx.gpars.dataflow.operator.DataflowOperatorActor.onMessage(DataflowOperatorActor.java:108)
+	at groovyx.gpars.actor.impl.SDAClosure$1.call(SDAClosure.java:43)
+	at groovyx.gpars.actor.AbstractLoopingActor.runEnhancedWithoutRepliesOnMessages(AbstractLoopingActor.java:293)
+	at groovyx.gpars.actor.AbstractLoopingActor.access$400(AbstractLoopingActor.java:30)
+	at groovyx.gpars.actor.AbstractLoopingActor$1.handleMessage(AbstractLoopingActor.java:93)
+	at groovyx.gpars.util.AsyncMessagingCore.run(AsyncMessagingCore.java:132)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:750)
+Mar-30 15:18:32.565 [Actor Thread 2] DEBUG nextflow.Session - Session aborted -- Cause: No such property: $it for class: Script_48635f6a
+Mar-30 15:18:32.593 [Actor Thread 2] DEBUG nextflow.Session - The following nodes are still active:
+  [operator] map
+  [operator] collectFile
+
+Mar-30 15:18:32.608 [Actor Thread 1] DEBUG nextflow.file.SortFileCollector - FileCollector temp dir not removed: null
+Mar-30 15:18:32.634 [main] DEBUG nextflow.trace.WorkflowStatsObserver - Workflow completed > WorkflowStats[succeededCount=0; failedCount=0; ignoredCount=0; cachedCount=0; pendingCount=0; submittedCount=0; runningCount=0; retriesCount=0; abortedCount=0; succeedDuration=0ms; failedDuration=0ms; cachedDuration=0ms;loadCpus=0; loadMemory=0; peakRunning=0; peakCpus=0; peakMemory=0; ]
+Mar-30 15:18:32.699 [main] DEBUG nextflow.CacheDB - Closing CacheDB done
+Mar-30 15:18:32.730 [main] DEBUG nextflow.script.ScriptRunner - > Execution complete -- Goodbye

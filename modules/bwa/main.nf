@@ -2,33 +2,37 @@ process BWA_INDEX {
 
     tag "${genome}_BWA_INDEX"
 
-    label 'high'
+    label 'low'
 
-    publishDir "$params.bwa_index_path", mode : 'copy'
+    publishDir "${params.index_path}", mode : 'copy'
     
     input : 
         val genome
+        val index
 
     output : 
         path("*")
-        val("${params.bwa_index}"), emit : bwa_index_ch
+        val("${params.index}/bwa/${params.genome_name}"), emit : bwa_index_ch
 
-    script : 
+    script :
     """
     #!/bin/bash
 
     source activate rnaseq
 
     prefix=\$(basename ${genome} .fa)
-    bwa index -p \$prefix ${genome}
+    bwa index -p \$prefix -a ${params.bwa_index_alg} ${genome}
     
     samtools faidx ${genome}
     cut -f1,2 ${genome}.fai > chrom_sizes.txt
-
     """
 }
 
 process BWA_MEM {
+
+    time { 5.hour * task.attempt } 
+    errorStrategy 'retry'
+    maxRetries 3 
 
     tag "${sampleID}_BWA_MEM"
 

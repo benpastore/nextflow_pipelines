@@ -48,10 +48,14 @@ Check bwa index is made
 Validate inputs (these are things that being specified in run.sh in projects/2024_CeNDR)
 ////////////////////////////////////////////////////////////////////
 */
-if (params.design)    { ch_design = file(params.design, checkIfExists: true) } else { exit 1, 'Design file not specified!' }
-if (params.genome)    { ch_genome = file(params.genome, checkIfExists: true) } else { exit 1, 'Genome fasta not specified!' }
-if (params.results)   { ; } else { exit 1, 'Results path not specified!' }
-if (params.outprefix) { ; } else { 'Outprefix not specified! Defaulting to CHIP_analysis'; params.outprefix = "CHIP_analysis" }
+//if (params.design)    { ch_design = file(params.design, checkIfExists: true) } else { exit 1, 'Design file not specified!' }
+//if (params.genome)    { ch_genome = file(params.genome, checkIfExists: true) } else { exit 1, 'Genome fasta not specified!' }
+//if (params.results)   { ; } else { exit 1, 'Results path not specified!' }
+//if (params.outprefix) { ; } else { 'Outprefix not specified! Defaulting to CHIP_analysis'; params.outprefix = "CHIP_analysis" }
+
+genome_fasta = file("${params.genome}")
+params.genome_name = "${genome_fasta.baseName}"
+params.index_path = "${params.index}/${params.aligner}/${params.genome_name}"
 
 /*
 ////////////////////////////////////////////////////////////////////
@@ -87,7 +91,8 @@ include { RUN_SNPEFF } from '../../modules/snpeff/main.nf'
 include { SOFT_FILTER } from '../../modules/gatk/main.nf'
 include { HARD_FILTER } from '../../modules/gatk/main.nf'
 include { HTML_REPORT } from '../../modules/gatk/main.nf'
-
+include { DOWNLOAD_BAM } from '../../modules/download/main.nf'
+include { PREPROCESS_SNPEFF } from '../../modules/snpeff/main.nf'
 
 /*
 ////////////////////////////////////////////////////////////////////
@@ -102,6 +107,19 @@ println params.date
 Subworkflows
 ////////////////////////////////////////////////////////////////////
 */
+
+workflow download_bam {
+
+    take : 
+        data
+    
+    main : 
+        DOWNLOAD_BAM( data )
+
+    emit :
+        bams = DOWNLOAD_BAM.out.bam_ch 
+
+}
 
 workflow read_data_fq {
 
@@ -172,27 +190,23 @@ workflow bwa_align {
     main :
         genome_fasta = file("${params.genome}")
         genome_name = "${genome_fasta.baseName}"
-        params.bwa_index_path = "${params.index}/bwa/${genome_name}"
-        params.bwa_index = "${params.bwa_index_path}/${genome_name}"
-        params.bwa_chrom_sizes = "${params.bwa_index_path}/chrom_sizes.txt"
+        bwa_index_path = "${params.index}/bwa/${genome_name}"
+        bwa_index = "${bwa_index_path}/${genome_name}"
+        bwa_chrom_sizes = "${bwa_index_path}/chrom_sizes.txt"
 
-        bwa_exists = file(params.bwa_index_path).exists()
+        bwa_exists = file(bwa_index_path).exists()
 
         if (bwa_exists == true){
-            params.bwa_build = false
+            bwa_build = false
         } else {
-            params.bwa_build = true
+            bwa_build = true
         }
 
-        if (params.bwa_build == true){
-
-            BWA_INDEX( params.genome )
+        if (bwa_build == true){
+            BWA_INDEX( params.genome, bwa_index )
             bwa_index_ch = BWA_INDEX.out.bwa_index_ch
-
         } else {
-
-            bwa_index_ch = params.bwa_index 
-        
+            bwa_index_ch = bwa_index 
         }
 
         BWA_MEM( bwa_index_ch, data )
@@ -310,9 +324,36 @@ workflow gatk {
     emit : 
         vcfs = CONCAT_STRAIN_GVCFS.out.concat_vcf_ch.collect().toList()
         refs = GATK_PREPARE_GENOME.out.processed_genome
-        contigs = GET_CONTIGS.out.splitText { it.strip() }
-        contig_file = GET_CONTIGS.out
+        contigs = GET_CONTIGS.out.contigs.splitText { it.strip() }
+        contig_file = GET_CONTIGS.out.contigs
 
+}
+
+workflow get_contigs {
+
+    take : 
+        data 
+
+    main : 
+        GET_CONTIGS( data )
+    
+    emit : 
+        contigs = GET_CONTIGS.out.contigs.splitText { it.strip() }
+        contig_file = GET_CONTIGS.out.contigs
+
+}
+
+workflow gatk_prepare_genome {
+    
+    take : 
+        data
+    
+    main : 
+        GATK_PREPARE_GENOME( data )
+    
+    emit : 
+        refs = GATK_PREPARE_GENOME.out.processed_genome
+    
 }
 
 workflow gatk_genotype_cohort {
@@ -324,7 +365,13 @@ workflow gatk_genotype_cohort {
     
     main : 
         // write sample map 
-        MAKE_SAMPLE_MAP( vcfs )
+
+        sample_vcfs = vcfs
+            .flatten()
+            .map { it -> "$it" }
+            .collectFile( name : "sample_vcfs.tsv", storeDir : "$params.results", newLine : true)
+
+        MAKE_SAMPLE_MAP( sample_vcfs )
 
         genome_db_input = MAKE_SAMPLE_MAP
             .out
@@ -374,10 +421,12 @@ workflow snpeff {
         vcfs 
     
     main : 
-        
-        BUILD_SNPEFF_DB( params.genome, params.gtf )
 
-        RUN_SNPEFF( vcfs, BUILD_SNPEFF_DB.out.genome )
+        PREPROCESS_SNPEFF( params.genome, params.gtf, params.protein, params.cds, params.organism )
+
+        BUILD_SNPEFF_DB( PREPROCESS_SNPEFF.out.done )
+
+        RUN_SNPEFF( vcfs, BUILD_SNPEFF_DB.out.db_name )
 
 }
 
@@ -391,16 +440,70 @@ workflow expansion_hunter {
 
 /*
 ////////////////////////////////////////////////////////////////////
+Workflow alternative entry point snpeff
+////////////////////////////////////////////////////////////////////
+*/
+
+workflow snpeff_workflow {
+
+    params.date = new Date().format( 'yyyyMMdd' )
+    vcfs = Channel.fromPath( "${params.vcfs}/*.vcf" )
+           
+    snpeff( vcfs )
+
+}
+
+workflow post_variant_calling_gatk_workflow { 
+
+    vcfs = Channel.fromPath( "${params.vcfs}/*.vcf.gz" )
+    //vcfs = all_vcfs.take( 3 )
+
+    // get the contigs 
+    get_contigs( params.genome )
+
+    // prepare genome
+    gatk_prepare_genome( params.genome )
+
+    // genotype cohort
+    gatk_genotype_cohort( vcfs, gatk_prepare_genome.out.refs, get_contigs.out.contigs )
+    genotype_vcfs = gatk_genotype_cohort.out.vcf_tbi
+
+    // filters
+    gatk_filters( genotype_vcfs, gatk_prepare_genome.out.refs, get_contigs.out.contig_file )
+
+    // snpeff
+    snpeff_input = gatk_genotype_cohort.out.vcfs.mix(gatk_filters.out.vcfs).flatten()
+    snpeff( snpeff_input )
+
+}
+
+
+/*
+////////////////////////////////////////////////////////////////////
 Workflow
 ////////////////////////////////////////////////////////////////////
 */
 workflow {
 
     if ( params.input_type == 'bam' ) {
+        
+        if (params.download_bams) {
+            bam_list = Channel
+                .fromPath( params.design )
+                .splitCsv(header:false, sep : ',', skip : 1)
+                .map { 
+                    row -> [ row[0], row[1]] 
+                    }
+            
+            download_bam( bam_list )
+            raw_dat = download_bam.out.bams
 
-        raw_dat = Channel
-            .fromPath( "${params.design}/*.bam" )
-            .map { bam -> [ bam.SimpleName, bam] }
+        } else {
+            raw_dat = Channel
+                .fromPath( "${params.design}/*.bam" )
+                .map { bam -> [ bam.SimpleName, bam] }
+
+        }
         
         index_bam( raw_dat )
         bams = index_bam.out.bams
@@ -463,8 +566,6 @@ workflow {
             }
 
             snpeff_input = gatk_genotype_cohort.out.vcfs.mix(gatk_filters.out.vcfs).flatten()
-            snpeff_input.view()
-            //snpeff_input = gatk_genotype_cohort.out.vcfs
         }
 
         if ( params.run_snpeff ) {

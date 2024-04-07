@@ -1,6 +1,6 @@
-
 //https://github.com/AndersenLab/wi-gatk/blob/master/main.nf
 
+/*
 process GET_CONTIGS {
 
     label 'low'
@@ -18,6 +18,32 @@ process GET_CONTIGS {
     source activate rnaseq
     
     samtools idxstats ${bam} | cut -f 1 | grep -v '*' > contigs.txt
+    """
+}
+*/
+
+process GET_CONTIGS {
+
+    label 'low'
+
+    input : 
+        val(genome)
+    
+    output: 
+        path("contigs.txt"), emit : contigs
+    
+    script: 
+    """
+    #!/bin/bash
+
+    source activate rnaseq
+
+    cp ${genome} ./genome.fa
+
+    samtools faidx ./genome.fa
+
+    python3 ${params.bin}/get_contigs.py -fai ./genome.fa.fai
+
     """
 }
 
@@ -66,7 +92,7 @@ process GATK_PROCESS_BAM {
 
     gatk MarkDuplicates -I ${bam} -O \$name.dups.bam -M \$name.dups.txt
 
-    gatk AddOrReplaceReadGroups -I \$name.dups.bam -O \$name.dups.grouped.bam -RGID ${sampleID} -RGLB lib1 -RGPL ILLUMINA -RGPU unit1 -RGSM 20
+    gatk AddOrReplaceReadGroups -I \$name.dups.bam -O \$name.dups.grouped.bam -RGID ${condition} -RGLB lib1 -RGPL ILLUMINA -RGPU unit1 -RGSM 20
     
     samtools index \$name.dups.grouped.bam
 
@@ -159,7 +185,7 @@ process MAKE_SAMPLE_MAP {
     publishDir "$params.results/sample_map", mode : 'copy', pattern : 'sample_map.tsv'
 
     input : 
-        val vcfs
+        val samples
     
     output : 
         path("sample_map.tsv"), emit : sample_map
@@ -169,12 +195,11 @@ process MAKE_SAMPLE_MAP {
     #!/usr/bin/env python3
     import os
 
-    vcfs=str('${vcfs[0].join(' ')}').split(" ")
-    print(vcfs)
-
     lines = ''
-    for v in vcfs : 
-        lines += f"{os.path.basename(v).split('.')[0]}\\t{v}\\n"
+    with open("$samples", 'r') as f : 
+        for line in f : 
+            v = line.strip()
+            lines += f"{os.path.basename(v).split('.')[0]}\\t{v}\\n"
     
     op = open('sample_map.tsv', 'w')
     op.write(lines)
@@ -184,7 +209,11 @@ process MAKE_SAMPLE_MAP {
 }
 
 process IMPORT_GENOME_DB {
-
+    
+    time { 5.hour * task.attempt } 
+    errorStrategy 'retry'
+    maxRetries 3 
+    
     label 'WIGATK'
     
     tag "import_genome_db"
@@ -199,10 +228,10 @@ process IMPORT_GENOME_DB {
     """
     #!/bin/bash
 
-    gatk \\
+    gatk --java-options "-Xmx${task.memory.toGiga()}g -Xms1g -XX:ConcGCThreads=${task.cpus}" \\
         GenomicsDBImport \\
         --genomicsdb-workspace-path ${contig}.db \\
-        --batch-size 16 \\
+        --batch-size 0 \\
         -L ${contig} \\
         --sample-name-map ${sample_map} \\
         --reader-threads ${task.cpus}
@@ -211,6 +240,10 @@ process IMPORT_GENOME_DB {
 }
 
 process GATK_GENOTYPE_COHORT {
+
+    time { 5.hour * task.attempt } 
+    errorStrategy 'retry'
+    maxRetries 3 
 
     label 'WIGATK'
 
@@ -226,7 +259,7 @@ process GATK_GENOTYPE_COHORT {
     """
     #!/bin/bash
 
-    gatk GenotypeGVCFs \\
+    gatk --java-options "-Xmx${task.memory.toGiga()}g -Xms2g" GenotypeGVCFs \\
         -R ${genome_fa} \\
         -V gendb://${db} \\
         -G StandardAnnotation \\
@@ -254,25 +287,35 @@ process GATK_GENOTYPE_COHORT {
 
 process CONCATENATE_VCF {
 
+    //time { 5.hour * task.attempt } 
+    //errorStrategy 'retry'
+    //maxRetries 3 
+
     label 'bcftools'
 
-    publishDir "$params.results/vcfs", mode : 'copy', pattern : '*vcf*'
+    publishDir "$params.results/vcfs", mode : 'copy', pattern : 'raw.sorted.vcf.gz'
+    publishDir "$params.results/vcfs", mode : 'copy', pattern : 'raw.sorted.vcf.gz.tbi'
+
 
     input: 
       path("*")
 
     output:
-        tuple path("raw.vcf.gz"), path("raw.vcf.gz.tbi"), emit: vcf_tbi
-        path("raw.vcf.gz"), emit: 'vcf'
+        tuple path("raw.sorted.vcf.gz"), path("raw.sorted.vcf.gz.tbi"), emit: vcf_tbi
+        path("raw.sorted.vcf.gz"), emit: 'vcf'
 
     """
     #!/bin/bash
         
-    ls *_cohort_pol.vcf.gz > contig_set.tsv
+    ls *_cohort_pol.vcf.gz > contig_set.vcf.gz
 
-    bcftools concat  -O z --file-list contig_set.tsv > raw.vcf.gz
+    #bcftools sort contig_set.vcf.gz -Oz -o contig_set.sorted.vcf.gz
+
+    bcftools concat -Oz --file-list contig_set.vcf.gz > raw.vcf.gz
     
-    bcftools index --tbi raw.vcf.gz
+    bcftools sort raw.vcf.gz -Oz -o raw.sorted.vcf.gz
+
+    bcftools index --tbi raw.sorted.vcf.gz
 
     """
 }

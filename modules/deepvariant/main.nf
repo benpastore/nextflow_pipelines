@@ -1,5 +1,9 @@
 process DEEPVARIANT_CALL_VARIANTS {
 
+    time { 5.hour * task.attempt } 
+    errorStrategy 'retry'
+    maxRetries 3 
+
     tag "${condition}_filter_merge_bam"
 
     label 'DeepVariant'
