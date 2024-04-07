@@ -103,6 +103,10 @@ process GATK_PROCESS_BAM {
 
 process GATK_CALL_VARIANTS {
 
+    errorStrategy 'retry'
+    maxRetries 3
+    time { 5.hour * task.attempt } 
+
     tag "${condition}_filter_merge_bam"
 
     label 'GATK'
@@ -210,10 +214,10 @@ process MAKE_SAMPLE_MAP {
 
 process IMPORT_GENOME_DB {
     
-    time { 5.hour * task.attempt } 
     errorStrategy 'retry'
-    maxRetries 3 
-    
+    maxRetries 3
+    time { 5.hour * task.attempt } 
+
     label 'WIGATK'
     
     tag "import_genome_db"
@@ -241,9 +245,10 @@ process IMPORT_GENOME_DB {
 
 process GATK_GENOTYPE_COHORT {
 
-    time { 5.hour * task.attempt } 
     errorStrategy 'retry'
-    maxRetries 3 
+    maxRetries 3
+    time { 5.hour * task.attempt } 
+
 
     label 'WIGATK'
 
@@ -287,10 +292,10 @@ process GATK_GENOTYPE_COHORT {
 
 process CONCATENATE_VCF {
 
-    //time { 5.hour * task.attempt } 
-    //errorStrategy 'retry'
-    //maxRetries 3 
-
+    errorStrategy 'retry'
+    maxRetries 3
+    time { 5.hour * task.attempt } 
+    
     label 'bcftools'
 
     publishDir "$params.results/vcfs", mode : 'copy', pattern : 'raw.sorted.vcf.gz'

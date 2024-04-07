@@ -2,19 +2,19 @@ import argparse
 
 
 def get_contigs(fai) :
-
+    
+    splits = 10
     lines = ''
     with open(fai, 'r') as f : 
         for line in f : 
             info = line.strip().split()
             chrom = info[0]
             size = int(info[1])
-            print(size)
-            batch_size = round(size/10)
+            batch_size = round(size/splits)
 
             curr = 1
-            for i in range(5) : 
-                if i == 4 : 
+            for i in range(splits) : 
+                if i == splits-1 : 
                     lines += f"{chrom}:{curr}-{size}\n"
                     curr = curr+batch_size
                 else : 
