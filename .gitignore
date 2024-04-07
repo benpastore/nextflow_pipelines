@@ -13,6 +13,7 @@
 
 /bin/snpEff/data/*
 /bin/snpEff/data
+/bin/snpEff/backup
 *snpEff/data/*
 singularity/
 index/
