@@ -11,6 +11,7 @@
 *.gff3
 .nextflow.log*
 
+*.nextflow.log*
 /bin/snpEff/data/*
 /bin/snpEff/data
 /bin/snpEff/backup
