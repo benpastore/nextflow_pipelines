@@ -1,5 +1,9 @@
 process FILTER_BAM {
 
+    errorStrategy 'retry'
+    maxRetries 3
+    time { 5.hour * task.attempt } 
+    
     tag "${condition}_filter_merge_bam"
 
     label 'high'
@@ -54,6 +58,8 @@ process INDEX_BAM {
     tag "${condition}_index_bam"
 
     label 'high'
+
+    errorStrategy 'ignore'
 
     publishDir "$params.results/bams", mode : 'copy', pattern : '*.bam*'
 

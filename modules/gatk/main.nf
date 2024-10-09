@@ -22,6 +22,62 @@ process GET_CONTIGS {
 }
 */
 
+
+process GATK_PREPARE_GENOME {
+
+    tag "prepare_genome"
+
+    label 'GATK'
+
+    input : 
+        val genome
+        val targets
+
+    output : 
+        tuple path("genome.fa"), path("genome.fa.fai"), path("genome.dict"), emit : processed_genome
+        path("contigs.txt"), emit : contigs
+
+    script:
+    """
+    #!/bin/bash
+
+    cp ${genome} ./genome.fa
+
+    gatk CreateSequenceDictionary -R ./genome.fa
+    
+    samtools faidx ./genome.fa
+
+    python3 ${params.bin}/get_contigs.py -fai ./genome.fa.fai -target_contigs "${targets}"
+
+    """
+}
+
+process IMPORT_GENOME_DB_CONTIGS {
+
+    tag "prepare_genome"
+
+    label 'GATK_xs'
+
+    input : 
+        val genome
+        val targets
+
+    output : 
+        path("contigs.txt"), emit : contigs
+
+    script:
+    """
+    #!/bin/bash
+
+    cp ${genome} ./genome.fa
+    
+    samtools faidx ./genome.fa
+
+    python3 ${params.bin}/get_contigs.py -fai ./genome.fa.fai -target_contigs "${targets}" -splits 3
+
+    """
+}
+
 process GET_CONTIGS {
 
     label 'low'
@@ -44,31 +100,6 @@ process GET_CONTIGS {
 
     python3 ${params.bin}/get_contigs.py -fai ./genome.fa.fai
 
-    """
-}
-
-
-process GATK_PREPARE_GENOME {
-
-    tag "prepare_genome"
-
-    label 'GATK'
-
-    input : 
-        val genome
-    
-    output : 
-        tuple path("genome.fa"), path("genome.fa.fai"), path("genome.dict"), emit : processed_genome
-    
-    script:
-    """
-    #!/bin/bash
-
-    cp ${genome} ./genome.fa
-
-    gatk CreateSequenceDictionary -R ./genome.fa
-    
-    samtools faidx ./genome.fa
     """
 }
 
@@ -104,12 +135,12 @@ process GATK_PROCESS_BAM {
 process GATK_CALL_VARIANTS {
 
     errorStrategy 'retry'
-    maxRetries 3
-    time { 5.hour * task.attempt } 
+    maxRetries 2
+    time { 2.hour * task.attempt } 
 
     tag "${condition}_filter_merge_bam"
 
-    label 'GATK'
+    label 'GATK_low'
 
     //publishDir "$params.results/gatk", mode : 'copy', pattern : '*'
 
@@ -117,7 +148,7 @@ process GATK_CALL_VARIANTS {
         tuple val(condition), val(bam), val(bai), val(region), val(genome_fa), val(genome_index), val(genome_dict)
 
     output : 
-        tuple val(condition), path("*.vcf"), emit : gatk_vcf_ch
+        tuple val(condition), path("*.sorted.g.vcf.gz"), emit : gatk_vcf_ch
         //path("*.g.vcf"), emit : gatk_vcf_only_ch
         //path("*")       
     
@@ -147,7 +178,11 @@ process GATK_CALL_VARIANTS {
         -R ${genome_fa} \\
         -I ${bam} \\
         -L ${region} \\
-        -O ${condition}.${region}.g.vcf
+        -O ${condition}.g.vcf
+
+    bcftools sort ${condition}.g.vcf -o ${condition}.sorted.g.vcf
+    bgzip ${condition}.sorted.g.vcf
+    tabix ${condition}.sorted.g.vcf.gz
 
     """   
 }
@@ -165,19 +200,46 @@ process  CONCAT_STRAIN_GVCFS {
     
     output:
         tuple path("${condition}.g.vcf.gz"), path("${condition}.g.vcf.gz.tbi")
-        path("${condition}.g.vcf.gz"), emit : concat_vcf_ch
+        //path("${condition}.g.vcf.gz"), emit : concat_vcf_ch
+        tuple val(condition), path("${condition}.g.vcf.gz"), emit : concat_vcf_ch
 
     script:
     """
     #!/bin/bash
 
-    #awk '{ print \$0 ".g.vcf.gz" }' > contig_set.tsv
+    #ls *_cohort_pol.vcf.gz > contig_set.vcf.gz
 
-    bcftools concat  -O z ${vcfs.join(' ')} > ${condition}.g.vcf.gz
+    bcftools concat -a -Oz ${vcfs.join(' ')} > ${condition}.g.vcf.gz
 
     bcftools index --tbi ${condition}.g.vcf.gz
     
     """
+}
+
+process REMOVE_VCF_DUPS {
+
+    label 'bcftools'
+
+    tag "${condition}"
+
+    publishDir  "$params.results/vcf_filtered", mode : 'copy', pattern : '*vcf*'
+
+    input : 
+        tuple val(condition), val(vcf)
+    
+    output : 
+        path("${condition}.g.dups.vcf.gz"), emit : concat_vcf_ch
+    
+    script : 
+    """
+    #!/bin/bash
+
+    bcftools norm -D -Oz ${vcf} > ${condition}.g.dups.vcf.gz
+
+    bcftools index --tbi ${condition}.g.dups.vcf.gz
+
+    """
+
 }
 
 process MAKE_SAMPLE_MAP {
@@ -213,12 +275,12 @@ process MAKE_SAMPLE_MAP {
 }
 
 process IMPORT_GENOME_DB {
-    
-    errorStrategy 'retry'
-    maxRetries 3
-    time { 5.hour * task.attempt } 
 
     label 'WIGATK'
+
+    errorStrategy 'retry'
+    time { 5.hour * task.attempt } 
+    maxRetries 3
     
     tag "import_genome_db"
 
@@ -232,10 +294,10 @@ process IMPORT_GENOME_DB {
     """
     #!/bin/bash
 
-    gatk --java-options "-Xmx${task.memory.toGiga()}g -Xms1g -XX:ConcGCThreads=${task.cpus}" \\
+    gatk --java-options "-Xmx${task.memory.toGiga()}g -XX:ConcGCThreads=${task.cpus}" \\
         GenomicsDBImport \\
         --genomicsdb-workspace-path ${contig}.db \\
-        --batch-size 0 \\
+        --batch-size 50 \\
         -L ${contig} \\
         --sample-name-map ${sample_map} \\
         --reader-threads ${task.cpus}
@@ -245,12 +307,7 @@ process IMPORT_GENOME_DB {
 
 process GATK_GENOTYPE_COHORT {
 
-    errorStrategy 'retry'
-    maxRetries 3
-    time { 5.hour * task.attempt } 
-
-
-    label 'WIGATK'
+    label 'WIGATK_xl'
 
     tag 'genotype_cohort'
 
@@ -264,7 +321,7 @@ process GATK_GENOTYPE_COHORT {
     """
     #!/bin/bash
 
-    gatk --java-options "-Xmx${task.memory.toGiga()}g -Xms2g" GenotypeGVCFs \\
+    gatk --java-options "-Xmx${task.memory.toGiga()}g" GenotypeGVCFs \\
         -R ${genome_fa} \\
         -V gendb://${db} \\
         -G StandardAnnotation \\

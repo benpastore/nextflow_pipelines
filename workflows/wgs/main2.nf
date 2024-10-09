@@ -1,9 +1,11 @@
 #!/usr/bin/env nextflow
 
+nextflow.enable.dsl=2
 
-test = Channel.of("./a.txt")
+params.vcfs = '/fs/scratch/PCON0160/ben_cendr_genotype_cohort/vcfs'
 
-test
-    .map{ it -> [it, it] }
-    .map{ it -> $it[0]"\t"$it[1]}
-    .collectFile( name : "test.tsv", storeDir : ".", newLine : true)
+vcfs = Channel
+    .fromPath( "${params.vcfs}/*.vcf" )
+    .concat(Channel.fromPath( "${params.vcfs}/*.vcf.gz" ))
+
+vcfs.view()

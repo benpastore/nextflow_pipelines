@@ -25,12 +25,15 @@ process PREPROCESS_SNPEFF {
     cp ${genome} \$db_dir/sequences.fa
     cp ${genome} ./sequences.fa
 
-    if [[ "$organism" == *"elegans" ]]; then 
+    if [[ "$organism" == *"elegans"* || "$organism" == *"briggsae"* ]]; then 
         cat ${protein} | sed -e 's/ wormpep=.*/.1/g' > \$db_dir/protein.fa
         cat ${cds} | sed -e 's/ gene=.*/.1/g' > \$db_dir/cds.fa
-    else 
+    elif [[ "$organism" == *"homo_sapiens"* ]]; then
         python3 ${params.bin}/fix_human_cds_protein_annotation.py -f ${protein} -o \$db_dir/protein.fa
         python3 ${params.bin}/fix_human_cds_protein_annotation.py -f ${cds} -o \$db_dir/cds.fa
+    else
+        cat ${protein} | awk '{ print \$1 }' > \$db_dir/protein.fa
+        cat ${cds} | awk '{ print \$1 }' > \$db_dir/cds.fa
     fi
 
     cp ${gtf} \$db_dir/genes.gtf
@@ -89,10 +92,12 @@ process RUN_SNPEFF {
     
     if [[ "${vcf}" == *".gz" ]]; then 
         vcfbase=\$(basename ${vcf} .vcf.gz)
-        zcat ${vcf} | cut -f1-8 > tmp
+        #zcat ${vcf} | cut -f1-8 > tmp
+        zcat ${vcf} > tmp
     else 
         vcfbase=\$(basename ${vcf} .vcf)
-        cat ${vcf} | cut -f1-8 > tmp
+        #cat ${vcf} | cut -f1-8 > tmp
+        cat ${vcf} > tmp
     fi
 
     java -Xmx110g -jar ${params.snpEff_data}/snpEff.jar \

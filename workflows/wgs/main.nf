@@ -78,12 +78,14 @@ include { DEEPVARIANT_CALL_VARIANTS } from '../../modules/deepvariant/main.nf'
 include { EXPANSION_HUNTER } from '../../modules/expansion_hunter/main.nf'
 include { GET_CONTIGS } from '../../modules/gatk/main.nf'
 include { GATK_PREPARE_GENOME } from '../../modules/gatk/main.nf'
+include { IMPORT_GENOME_DB_CONTIGS } from '../../modules/gatk/main.nf'
 include { GATK_PROCESS_BAM } from '../../modules/gatk/main.nf'
 include { GATK_CALL_VARIANTS } from '../../modules/gatk/main.nf'
 include { CONCAT_STRAIN_GVCFS } from '../../modules/gatk/main.nf'
 include { MAKE_SAMPLE_MAP } from '../../modules/gatk/main.nf'
 include { IMPORT_GENOME_DB } from '../../modules/gatk/main.nf'
 include { CONCATENATE_VCF } from '../../modules/gatk/main.nf'
+include { REMOVE_VCF_DUPS } from '../../modules/gatk/main.nf'
 include { GATK_GENOTYPE_COHORT } from '../../modules/gatk/main.nf'
 include { MULTIQC } from '../../modules/gatk/main.nf'
 include { BUILD_SNPEFF_DB } from '../../modules/snpeff/main.nf'
@@ -300,12 +302,11 @@ workflow gatk {
         /*
         * Get contigs
         */
-        GET_CONTIGS( data.first() )
+        //GET_CONTIGS( data.first() )
+        GATK_PREPARE_GENOME( params.genome, params.target_contigs )
 
         // get contigs: I, II, III, IV, V, X
-        contigs = GET_CONTIGS.out.splitText { it.strip() }
-
-        GATK_PREPARE_GENOME( params.genome )
+        contigs = GATK_PREPARE_GENOME.out.contigs.splitText { it.strip() }
 
         GATK_PROCESS_BAM( data )
 
@@ -320,12 +321,28 @@ workflow gatk {
 
         // concat vcfs, combine chromsome calls for each strain
         CONCAT_STRAIN_GVCFS( GATK_CALL_VARIANTS.out.groupTuple() )
+
+        // remove duplicates fron concat vcf
+        REMOVE_VCF_DUPS( CONCAT_STRAIN_GVCFS.out.concat_vcf_ch )
     
     emit : 
-        vcfs = CONCAT_STRAIN_GVCFS.out.concat_vcf_ch.collect().toList()
+        vcfs = REMOVE_VCF_DUPS.out.concat_vcf_ch.collect().toList()
         refs = GATK_PREPARE_GENOME.out.processed_genome
-        contigs = GET_CONTIGS.out.contigs.splitText { it.strip() }
-        contig_file = GET_CONTIGS.out.contigs
+        contigs = GATK_PREPARE_GENOME.out.contigs.splitText { it.strip() }
+        contig_file = GATK_PREPARE_GENOME.out.contigs
+
+}
+
+workflow bcftools_filter_dups {
+
+    take : 
+        data 
+    
+    main : 
+        REMOVE_VCF_DUPS( data )
+    
+    emit : 
+        vcfs = REMOVE_VCF_DUPS.out.concat_vcf_ch.collect().toList()
 
 }
 
@@ -346,14 +363,32 @@ workflow get_contigs {
 workflow gatk_prepare_genome {
     
     take : 
-        data
+        genome
+        contigs
     
     main : 
-        GATK_PREPARE_GENOME( data )
+        GATK_PREPARE_GENOME( genome, contigs )
     
     emit : 
         refs = GATK_PREPARE_GENOME.out.processed_genome
+        contigs = GATK_PREPARE_GENOME.out.contigs.splitText { it.strip() }
+        contig_file = GATK_PREPARE_GENOME.out.contigs
     
+}
+
+workflow gatk_import_genome_db_contigs {
+
+    take : 
+        genome
+        targets
+
+    main : 
+        IMPORT_GENOME_DB_CONTIGS(genome, targets)
+
+    emit : 
+        contigs = IMPORT_GENOME_DB_CONTIGS.out.contigs.splitText { it.strip() }
+
+
 }
 
 workflow gatk_genotype_cohort {
@@ -444,32 +479,54 @@ Workflow alternative entry point snpeff
 ////////////////////////////////////////////////////////////////////
 */
 
+workflow test_snpeff_build { 
+
+    PREPROCESS_SNPEFF( params.genome, params.gtf, params.protein, params.cds, params.organism )
+
+    BUILD_SNPEFF_DB( PREPROCESS_SNPEFF.out.done )
+
+}
+
 workflow snpeff_workflow {
 
     params.date = new Date().format( 'yyyyMMdd' )
-    vcfs = Channel.fromPath( "${params.vcfs}/*.vcf" )
-           
+    vcfs = Channel
+        .fromPath( "${params.vcfs}/*.vcf" )
+        .concat(Channel.fromPath( "${params.vcfs}/*.vcf.gz" ))
     snpeff( vcfs )
 
 }
 
 workflow post_variant_calling_gatk_workflow { 
 
-    vcfs = Channel.fromPath( "${params.vcfs}/*.vcf.gz" )
-    //vcfs = all_vcfs.take( 3 )
+    //vcfs = Channel.fromPath( "${params.vcfs}/*.vcf.gz" )
+
+    my_vcfs = Channel
+        .fromPath( "${params.vcfs}/*.vcf.gz" )
+        .map{ vcf -> [ vcf.SimpleName, vcf] }
+        
+    
+    //test_vcfs = my_vcfs.take( 3 )
+    //test_vcfs.view()
+
+    vcfs = bcftools_filter_dups( my_vcfs )
 
     // get the contigs 
-    get_contigs( params.genome )
+    //get_contigs( params.genome )
 
     // prepare genome
-    gatk_prepare_genome( params.genome )
+    gatk_prepare_genome( params.genome,  params.target_contigs )
+
+    //gatk_import_genome_db_contigs
+    gatk_import_genome_db_contigs( params.genome, params.target_contigs )
+
 
     // genotype cohort
-    gatk_genotype_cohort( vcfs, gatk_prepare_genome.out.refs, get_contigs.out.contigs )
+    gatk_genotype_cohort( vcfs, gatk_prepare_genome.out.refs, gatk_import_genome_db_contigs.out.contigs )
     genotype_vcfs = gatk_genotype_cohort.out.vcf_tbi
 
     // filters
-    gatk_filters( genotype_vcfs, gatk_prepare_genome.out.refs, get_contigs.out.contig_file )
+    gatk_filters( genotype_vcfs, gatk_prepare_genome.out.refs, gatk_prepare_genome.out.contig_file )
 
     // snpeff
     snpeff_input = gatk_genotype_cohort.out.vcfs.mix(gatk_filters.out.vcfs).flatten()
@@ -502,12 +559,19 @@ workflow {
             raw_dat = Channel
                 .fromPath( "${params.design}/*.bam" )
                 .map { bam -> [ bam.SimpleName, bam] }
-
         }
         
         index_bam( raw_dat )
         bams = index_bam.out.bams
+    
+    } else if ( params.input_type == 'bambai' ) {
 
+        bams = Channel
+            .fromPath("${params.design}/*.bam")
+            .map { bamFile ->
+                def baiFile = bamFile.toString().replace('.bam', '.bai')
+                def condition = bamFile.SimpleName
+                tuple(condition, file(bamFile), file(baiFile)) }
     } else {
 
         read_data_fq( params.design )
