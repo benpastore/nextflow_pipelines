@@ -115,6 +115,78 @@ process STAR_ALIGN {
     """
 }
 
+process STAR_INDEX_RRNA {
+    
+    tag "${genome}_STAR_rRNA_index"
+
+    label 'low'
+
+    //publishDir "$params.star_index_path", mode : 'copy'
+    
+    input : 
+        val genome
+        val genome_dir
+    
+    output : 
+        path("*")
+        val("${genome_dir}"), emit : star_idx_ch
+
+    script : 
+    """
+    #!/bin/bash
+
+    source activate rnaseq
+    
+    STAR --runMode genomeGenerate \\
+         --genomeFastaFiles ${genome} \\
+         --runThreadN ${task.cpus} \\
+         --genomeDir ${genome_dir}
+    """
+
+}
+
+process STAR_REMOVE_RRNA {
+
+    tag "${sampleID}_STAR_rRNA_remove"
+
+    label 'medium'
+
+    publishDir "$params.results/star_rRNA_filtered/fastq", mode : 'copy', pattern : '*.fastq.gz'
+    publishDir "$params.results/star_rRNA_filtered/logs", mode : 'copy', pattern : '*Log.final.out'
+
+    input:
+        val star_idx
+        tuple val(sampleID), val(fastq)   // The sample ID and the input FASTQ files (reads)
+
+    output:
+        tuple val(sampleID), path("${sampleID}_filtered.fastq.gz"), emit : filtered_reads_ch
+        path("*Log.final.out")
+
+    script:
+    fastq_command = params.single_end ? "--readFilesIn ${fastq}" : "--readFilesIn ${fastq[0]} ${fastq[1]}"
+    readFilesCommand = params.readFilesCommand ? "--readFilesCommand ${params.readFilesCommand}" : "zcat"
+
+    """
+    #!/bin/bash
+
+    source activate rnaseq
+
+    # Align reads to the rRNA reference using STAR and extract unmapped reads
+    STAR --runMode alignReads \\
+        --genomeDir ${star_idx} \\
+        --runThreadN ${task.cpus} \\
+        ${fastq_command} \\
+        ${readFilesCommand} \\
+        --outFileNamePrefix ${sampleID}_rRNA_removed. \\
+        --outReadsUnmapped Fastx \\
+        --outSAMtype None \\
+        --outFilterMultimapNmax 20
+
+    # Move unmapped reads to the filtered FASTQ file
+    mv ${sampleID}_rRNA_removed.Unmapped.out.mate1 ${sampleID}_filtered.fastq.gz
+    """
+}
+
 /*
     # for alignment for sailor purposes
     #STAR --runMode alignReads \\

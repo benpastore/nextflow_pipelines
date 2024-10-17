@@ -75,6 +75,8 @@ include { FILTER_BAM } from '../../modules/samtools/main.nf'
 include { FEATURECOUNTS } from '../../modules/featurecounts/main.nf'
 include { RBIND_COUNTS } from '../../modules/general/main.nf'
 include { MASTER_TABLE } from '../../modules/general/main.nf'
+include { STAR_INDEX_RRNA } from '../../modules/star/main.nf'
+include { STAR_REMOVE_RRNA } from '../../modules/star/main.nf'
 
 /*
 ////////////////////////////////////////////////////////////////////
@@ -168,6 +170,41 @@ workflow trim {
     
     emit : 
         fqs = fq_ch
+}
+
+workflow star_remove_rRNA {
+
+    take: 
+        data // Input FASTQ files
+
+    main: 
+        genome_fasta = file("${params.rRNA_fasta}")  // Ensure params.rRNA_fasta is defined
+        genome_name = "${genome_fasta.baseName}"
+        star_index_path = "${params.index}/star/${genome_name}"  // STAR index path for rRNA
+        star_index = "${star_index_path}"
+        star_chrom_sizes = "${star_index_path}/chrNameLength.txt"
+
+        // Check if the STAR index already exists
+        star_exists = file(star_chrom_sizes).exists()
+
+        if (star_exists == true) {
+            star_build = false
+        } else {
+            star_build = true
+        }
+
+        if (star_build == true) {
+            STAR_INDEX_RRNA(params.rRNA_fasta, star_index_path) // Run the STAR indexing process
+            star_index_ch = STAR_INDEX_RRNA.out.star_idx_ch // Use the STAR_INDEX_RRNA process output channel      
+        } else {
+            star_index_ch = star_index  // Reuse existing STAR index
+        }
+
+        // Use the generated or existing STAR index to remove rRNA from the RNA-seq reads
+        STAR_REMOVE_RRNA(star_index_ch, data) // Use STAR to remove rRNA from the input reads
+    
+    emit:
+        filtered_reads_ch = STAR_REMOVE_RRNA.out.filtered_reads_ch  // Emit the filtered RNA-seq reads for downstream processes
 }
 
 workflow star_align {
@@ -336,8 +373,14 @@ workflow {
     // trim 
     trim( read_data_fq.out.reads )
 
+    // star remove rRNA 
+    star_remove_rRNA( trim.out.fqs )
+
     // star align
-    star_align( trim.out.fqs )
+    star_align( star_remove_rRNA.out.filtered_reads_ch )
+    
+    // star align
+    //star_align( trim.out.fqs )
     
     // filter bam
     if ( params.filter_bam ){
