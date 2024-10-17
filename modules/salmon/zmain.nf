@@ -4,15 +4,13 @@ process SALMON_INDEX {
 
     label 'medium'
 
-    //publishDir "$params.salmon_index_path", mode : 'copy'
+    publishDir "$params.salmon_index_path", mode : 'copy'
 
     input : 
         val transcripts
-        val genome_dir
     
     output : 
         path("${params.salmon_index_path}"), emit : salmon_idx_ch
-        val genome_dir
     
     script : 
     additional_salmon_commands = params.salmon_commands ? "${params.salmon_commands}" : ""
@@ -22,10 +20,6 @@ process SALMON_INDEX {
     source activate rnaseq
 
     salmon index --threads ${task.cpus} -t ${transcripts} ${additional_salmon_commands} --index ${params.salmon_index_path}
-
-    [ ! -d ${genome_dir} ] && mkdir -p ${genome_dir}
-
-    cp * ${genome_dir}
 
     """
 
