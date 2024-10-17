@@ -14,7 +14,7 @@ process STAR_INDEX {
     
     output : 
         path("*")
-        val("${params.star_index_path}"), emit : star_idx_ch
+        val("${genome_dir}"), emit : star_idx_ch
 
     script : 
     """
@@ -39,6 +39,7 @@ process STAR_ALIGN {
     publishDir "$params.results/star_alignments/bam", mode : 'copy', pattern : '*.bam'
     publishDir "$params.results/star_alignments/bam", mode : 'copy', pattern : '*.bai'
     publishDir "$params.results/star_alignments/logs", mode : 'copy', pattern : '*Log.final.out'
+    publishDir "$params.results/star_alignments/counts", mode : 'copy', pattern : '*ReadsPerGene.out.tab'
 
     input : 
         val star_idx
@@ -48,6 +49,8 @@ process STAR_ALIGN {
     output :
         tuple val(sampleID), path("${sampleID}.Aligned.sortedByCoord.out.bam"), path("${sampleID}.Aligned.sortedByCoord.out.bam.bai"), emit : star_bams_ch // path("${sampleID}.Aligned.sortedByCoord.out.bam.bai"), emit : star_bams_ch
         path("*Log.final.out")
+        tuple val(sampleID), path("${sampleID}.Aligned.sortedByCoord.out.bam"), path("${sampleID}.Aligned.sortedByCoord.out.bam.bai"), emit : star_bam_bai_ch
+        path("*ReadsPerGene.out.tab")
 
     script : 
     fastq_command = params.single_end ? "--readFilesIn ${fastq}" : "--readFilesIn ${fastq[0]} ${fastq[1]}"
@@ -72,7 +75,8 @@ process STAR_ALIGN {
     outSAMmode_command = params.outSAMmode ? "--outSAMmode ${params.outSAMmode}" : "--outSAMmode Full"
     outSAMattributes_command = params.outSAMattributes ? "--outSAMattributes ${params.outSAMattributes}" : "--outSAMattributes All"
     outBAMcompression_command = params.outBAMcompression ? "--outBAMcompression ${params.outBAMcompression}" : "--outBAMcompression 1"
-
+    quantMode_command = params.quantMode ? "--quantMode GeneCounts" : ""
+    outFilterMismatchNoverLmax_command = params.outFilterMismatchNoverLmax ? "--outFilterMismatchNoverLmax ${params.outFilterMismatchNoverLmax}" : "--outFilterMismatchNoverLmax 0.3"
     """
     #!/bin/bash
     
@@ -103,6 +107,8 @@ process STAR_ALIGN {
         ${outSAMmode_command} \\
         ${outSAMattributes_command} \\
         ${outBAMcompression_command} \\
+        ${quantMode_command} \\
+        ${outFilterMismatchNoverLmax_command} \\
         --outFileNamePrefix ${sampleID}.
 
     samtools index -@ 12 ${sampleID}.Aligned.sortedByCoord.out.bam

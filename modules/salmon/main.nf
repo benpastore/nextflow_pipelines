@@ -4,21 +4,28 @@ process SALMON_INDEX {
 
     label 'medium'
 
-    publishDir "$params.salmon_index_path", mode : 'copy'
+    //publishDir "$params.salmon_index_path", mode : 'copy'
 
     input : 
         val transcripts
+        val genome_dir
     
     output : 
-        val("${params.salmon_index_path}"), emit : salmon_idx_ch
+        path("${params.salmon_index_path}"), emit : salmon_idx_ch
+        val genome_dir
     
     script : 
+    additional_salmon_commands = params.salmon_commands ? "${params.salmon_commands}" : ""
     """
     #!/bin/bash
 
     source activate rnaseq
 
-    salmon index --threads ${task.cpus} -t ${transcripts} --index ${params.salmon_index_path}
+    salmon index --threads ${task.cpus} -t ${transcripts} ${additional_salmon_commands} --index ${params.salmon_index_path}
+
+    [ ! -d ${genome_dir} ] && mkdir -p ${genome_dir}
+
+    cp * ${genome_dir}
 
     """
 
@@ -41,6 +48,7 @@ process SALMON {
     
     script : 
     fastq_command = params.single_end ? "-r ${fastq}" : "-1 ${fastq[0]} -2 ${fastq[1]}"
+    salmon_libtype = params.salmon_libtype ? "${params.salmon_libtype}" : "ISR"
     """
     #!/bin/bash
 
@@ -49,7 +57,7 @@ process SALMON {
     salmon quant \\
         -i ${salmon_idx} \\
         --threads ${task.cpus} \\
-        --libType SR \\
+        --libType ${salmon_libtype} \\
         ${fastq_command} \\
         -o ${sampleID}
     

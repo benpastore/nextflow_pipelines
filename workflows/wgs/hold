@@ -1,0 +1,2 @@
+ cpus = 25
+                clusterOptions = "--account=PAS0631 --time=12:00:00 --nodes=1 --mem=64gb "

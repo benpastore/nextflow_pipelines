@@ -4,7 +4,19 @@
 *.out
 *.nextflow*
 *sailor*
+*.fa
+*.gtf
+*.gff
+*.gff3
+*.gff3
+.nextflow.log*
 
+*.nextflow.log*
+/bin/snpEff/data/*
+/bin/snpEff/data
+/bin/snpEff/backup
+*snpEff/data/*
 singularity/
 index/
 .nextflow/
+snpEff/data/

@@ -39,7 +39,7 @@ echo """#!/bin/bash
 
 #SBATCH --no-requeue
 #SBATCH -c 1
-#SBATCH --account=PAS0631 --nodes=1 --ntasks-per-node=1 --time=128:00:00 --mem=2gb
+#SBATCH --account=PAS1473 --nodes=1 --ntasks-per-node=1 --time=128:00:00 --mem=2gb
 
 module load java/12.0.2
 
@@ -47,6 +47,7 @@ nextflow $SCRIPT_DIR/main.nf $@
 """ > $SCRIPT_DIR/submit.sbatch
 
 sbatch $SCRIPT_DIR/submit.sbatch
+#sh $SCRIPT_DIR/submit.sbatch
 
 }
   

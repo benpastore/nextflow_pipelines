@@ -145,17 +145,22 @@ process MERGE_BW {
 
     echo \$N_bw
 
-    # merge bigwig(s) --> bedgraph
-    bigWigMerge ${bws.join(' ')} ${condition}.tmp
+    if [ "\$N_bw" -gt 1 ]; then 
 
-    # divide counts column by N samples to average
-    cat ${condition}.tmp | awk -F'\\t' -v OFS='\\t' -v nsamp=\$N_bw '{ print \$1,\$2,\$3,\$4/nsamp }' > ${condition}.bedGraph
+        # merge bigwig(s) --> bedgraph
+        bigWigMerge ${bws.join(' ')} ${condition}.tmp
 
-    # sort the bed file 
-    bedSort ${condition}.bedGraph ${condition}.bedGraph.sorted
+        # divide counts column by N samples to average
+        cat ${condition}.tmp | awk -F'\\t' -v OFS='\\t' -v nsamp=\$N_bw '{ print \$1,\$2,\$3,\$4/nsamp }' > ${condition}.bedGraph
 
-    # convert bedGraph --> bigwig
-    bedGraphToBigWig ${condition}.bedGraph.sorted ${chrom_sizes} ${condition}.bw
+        # sort the bed file 
+        bedSort ${condition}.bedGraph ${condition}.bedGraph.sorted
+
+        # convert bedGraph --> bigwig
+        bedGraphToBigWig ${condition}.bedGraph.sorted ${chrom_sizes} ${condition}.bw
+    else 
+        cp ${bws.join(' ')} ${condition}.bw
+    fi
     """
 
 }

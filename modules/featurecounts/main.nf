@@ -10,7 +10,7 @@ process FEATURECOUNTS {
     publishDir "$params.results/counts/feature_counts", mode: 'copy', pattern : "*.tsv"
 
     input :
-        tuple val(sampleID), path(bam) //, path(bai)
+        tuple val(sampleID), path(bam), path(bai)
         val gtf
 
     output :
@@ -26,6 +26,7 @@ process FEATURECOUNTS {
     feature_command = params.feature ? "-t ${params.feature}" : "-t exon"
     multimap_command = params.count_multimappers ? "-M" : ""
     fraction_command = params.fraction_counts ? "--fraction" : ""
+    multioverlap_command = params.multi_overlap ? "-O" : ""
     """
     #!/bin/bash
 
@@ -38,6 +39,7 @@ process FEATURECOUNTS {
         ${libtype_command} \\
         ${multimap_command} \\
         ${fraction_command} \\
+        ${multioverlap_command} \\
         -T ${task.cpus} \\
         -a ${gtf} \\
         -o ${sampleID}.feature_counts.txt \\
