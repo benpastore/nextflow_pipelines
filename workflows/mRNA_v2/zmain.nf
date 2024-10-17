@@ -75,6 +75,7 @@ include { FILTER_BAM } from '../../modules/samtools/main.nf'
 include { FEATURECOUNTS } from '../../modules/featurecounts/main.nf'
 include { RBIND_COUNTS } from '../../modules/general/main.nf'
 include { MASTER_TABLE } from '../../modules/general/main.nf'
+include { STAR_REMOVE_RRNA } from '../modules/star/main.nf'
 
 /*
 ////////////////////////////////////////////////////////////////////
@@ -170,29 +171,29 @@ workflow trim {
         fqs = fq_ch
 }
 
-workflow star_align {
+workflow star_remove_rRNA {
 
     take : 
-        data 
-    
+        data
     main : 
-        genome_fasta = file("${params.genome}")
+        genome_fasta = file("${params.rRNA_fasta}")
         genome_name = "${genome_fasta.baseName}"
         star_index_path = "${params.index}/star/${genome_name}"
         star_index = "${star_index_path}"
         star_chrom_sizes = "${star_index_path}/chrNameLength.txt"
 
-        star_exists = file(star_chrom_sizes).exists()
-        println star_exists
+        star_exists = file(star_index_path).exists()
+
         if (star_exists == true){
             star_build = false
         } else {
             star_build = true
         }
+        
+        
+        if ( star_build == true){
 
-        if (star_build == true){
-
-            STAR_INDEX( params.genome, params.gtf, star_index_path )
+            STAR_INDEX_RRNA( params.rRNA_fasta, star_index_path )
             star_index_ch = STAR_INDEX.out.star_idx_ch
 
         } else {
@@ -201,11 +202,54 @@ workflow star_align {
         
         }
 
+        STAR_REMOVE_RRNA( star_index_ch, data )
+
+
+
+
+
+
+
+
+
+
+}
+
+workflow star_align {
+
+    take : 
+        data 
+    
+    main : 
+        genome_fasta = file("${params.genome}")
+        genome_name = "${genome_fasta.baseName}"
+        params.star_index_path = "${params.index}/star/${genome_name}"
+        params.star_index = "${params.star_index_path}"
+        params.star_chrom_sizes = "${params.star_index_path}/chrNameLength.txt"
+
+        star_exists = file(params.star_index_path).exists()
+
+        if (star_exists == true){
+            params.star_build = false
+        } else {
+            params.star_build = true
+        }
+
+        if (params.star_build == true){
+
+            STAR_INDEX( params.genome, params.gtf, params.star_index_path )
+            star_index_ch = STAR_INDEX.out.star_idx_ch
+
+        } else {
+
+            star_index_ch = params.star_index 
+        
+        }
+
         STAR_ALIGN( star_index_ch, params.gtf, data )
     
     emit : 
         bams = STAR_ALIGN.out.star_bam_bai_ch
-        chrom_sizes = "${star_index_path}/chrNameLength.txt"
 
 }
 
@@ -262,21 +306,22 @@ workflow salmon {
     main :
         genome_fasta = file("${params.salmon}")
         genome_name = "${genome_fasta.baseName}"
-        salmon_index_path = "${params.index}/salmon/${genome_name}"
-        salmon_index = "${params.index}/salmon"
+        params.salmon_index_path = "${params.index}/salmon/${genome_name}"
+        params.salmon_index = "${params.index}/salmon"
 
-        salmon_exists = file(salmon_index_path).exists()
+        salmon_exists = file(params.salmon_index_path).exists()
+        println salmon_exists
         if (salmon_exists == true){
-            salmon_build = false
+            params.salmon_build = false
         } else {
-            salmon_build = true
+            params.salmon_build = true
         }
 
-        if ( salmon_build ){
-            SALMON_INDEX ( params.salmon, salmon_index_path )
+        if ( params.salmon_build ){
+            SALMON_INDEX ( params.salmon )
             salmon_idx_ch = SALMON_INDEX.out.salmon_idx_ch
         } else {
-            salmon_idx_ch = salmon_index_path
+            salmon_idx_ch = params.salmon_index_path
         }
 
         SALMON( salmon_idx_ch, data )
@@ -352,14 +397,14 @@ workflow {
 
     // merge bams
     if ( params.merge_bw ) {
-        merge_bw( bam_to_bw.out.bws, read_data_fq.out.replicates, star_align.out.chrom_sizes )
+        merge_bw( bam_to_bw.out.bws, read_data_fq.out.replicates, params.star_chrom_sizes )
     }
 
     /*
      * SALMON mapping
      */
     if ( params.salmon ) {
-        salmon( trim.out.fqs,  )
+        salmon( trim.out.fqs )
     }
 
     /*

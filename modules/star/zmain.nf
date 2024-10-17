@@ -14,7 +14,7 @@ process STAR_INDEX {
     
     output : 
         path("*")
-        val("${genome_dir}"), emit : star_idx_ch
+        val("${params.star_index_path}"), emit : star_idx_ch
 
     script : 
     """
@@ -141,3 +141,43 @@ process STAR_ALIGN {
     #    --outBAMcompression 10 \\
     #    --outFileNamePrefix ${sampleID}.
 */
+
+
+process STAR_INDEX_RRNA {
+    
+    tag "${genome}_STAR_rRNA_index"
+
+    label 'low'
+
+    //publishDir "$params.star_index_path", mode : 'copy'
+    
+    input : 
+        val genome
+        val genome_dir
+    
+    output : 
+        path("*")
+        val("${params.star_index_path}"), emit : star_idx_ch
+
+    script : 
+    """
+    #!/bin/bash
+
+    source activate rnaseq
+    
+    STAR --runMode genomeGenerate \\
+         --genomeFastaFiles ${genome} \\
+         --runThreadN ${task.cpus} \\
+         --genomeDir ${genome_dir}
+    """
+
+}
+
+
+process STAR_REMOVE_RRNA {
+
+    
+
+
+
+}
