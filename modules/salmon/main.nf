@@ -11,8 +11,7 @@ process SALMON_INDEX {
         val genome_dir
     
     output : 
-        path("${params.salmon_index_path}"), emit : salmon_idx_ch
-        val genome_dir
+        val(genome_dir), emit : salmon_idx_ch
     
     script : 
     additional_salmon_commands = params.salmon_commands ? "${params.salmon_commands}" : ""
@@ -21,11 +20,11 @@ process SALMON_INDEX {
 
     source activate rnaseq
 
-    salmon index --threads ${task.cpus} -t ${transcripts} ${additional_salmon_commands} --index ${params.salmon_index_path}
+    salmon index --threads ${task.cpus} -t ${transcripts} ${additional_salmon_commands} --index ${genome_dir}
 
-    [ ! -d ${genome_dir} ] && mkdir -p ${genome_dir}
+    #[ ! -d ${genome_dir} ] && mkdir -p ${genome_dir}
 
-    cp * ${genome_dir}
+    #cp * ${genome_dir}
 
     """
 

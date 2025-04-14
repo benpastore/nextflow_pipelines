@@ -9,6 +9,8 @@ pastore.28@osu.edu
 ----------------------------------------------------------------------------------------
 */
 
+println params.config_file
+
 def helpMessage() {
     log.info"""
     Usage:
@@ -75,6 +77,7 @@ include { INDEX_BAM } from '../../modules/samtools/main.nf'
 include { PICARD_METRICS } from '../../modules/picard/main.nf'
 include { BAM_TO_BW } from '../../modules/deeptools/main.nf'
 include { DEEPVARIANT_CALL_VARIANTS } from '../../modules/deepvariant/main.nf'
+include { SPLIT_DV_VCF } from '../../modules/deepvariant/main.nf'
 include { EXPANSION_HUNTER } from '../../modules/expansion_hunter/main.nf'
 include { GET_CONTIGS } from '../../modules/gatk/main.nf'
 include { GATK_PREPARE_GENOME } from '../../modules/gatk/main.nf'
@@ -95,6 +98,8 @@ include { HARD_FILTER } from '../../modules/gatk/main.nf'
 include { HTML_REPORT } from '../../modules/gatk/main.nf'
 include { DOWNLOAD_BAM } from '../../modules/download/main.nf'
 include { PREPROCESS_SNPEFF } from '../../modules/snpeff/main.nf'
+include { CI_SPLICE_AI } from '../../modules/ci_splice_ai/main.nf'
+include { CONCAT_CI_SPLICE_AI_FILES } from '../../modules/ci_splice_ai/main.nf'
 
 /*
 ////////////////////////////////////////////////////////////////////
@@ -349,10 +354,12 @@ workflow bcftools_filter_dups {
 workflow get_contigs {
 
     take : 
-        data 
+        genome
+        targets
+        splits
 
     main : 
-        GET_CONTIGS( data )
+        GET_CONTIGS( genome, targets, splits )
     
     emit : 
         contigs = GET_CONTIGS.out.contigs.splitText { it.strip() }
@@ -518,11 +525,10 @@ workflow post_variant_calling_gatk_workflow {
     gatk_prepare_genome( params.genome,  params.target_contigs )
 
     //gatk_import_genome_db_contigs
-    gatk_import_genome_db_contigs( params.genome, params.target_contigs )
-
+    get_contigs( params.genome, params.target_contigs, params.genoype_cohort_splits )
 
     // genotype cohort
-    gatk_genotype_cohort( vcfs, gatk_prepare_genome.out.refs, gatk_import_genome_db_contigs.out.contigs )
+    gatk_genotype_cohort( vcfs, gatk_prepare_genome.out.refs, get_contigs.out.contigs )
     genotype_vcfs = gatk_genotype_cohort.out.vcf_tbi
 
     // filters
@@ -531,6 +537,51 @@ workflow post_variant_calling_gatk_workflow {
     // snpeff
     snpeff_input = gatk_genotype_cohort.out.vcfs.mix(gatk_filters.out.vcfs).flatten()
     snpeff( snpeff_input )
+
+}
+
+workflow ci_splice_ai {
+
+
+    println params.test_variable
+
+    my_vcfs = Channel
+        .fromPath( "${params.vcfs}/test.vcf.gz" )
+        .map{ vcf -> [ vcf.SimpleName, vcf] }
+
+    my_vcfs.view()
+
+    SPLIT_DV_VCF( my_vcfs )
+
+    SPLIT_DV_VCF.out.vcfs.view() 
+    
+    /*
+    vcfs = SPLIT_DV_VCF.out.vcfs
+        .flatMap { item ->
+            def key = item[0]
+            def values = item[1]
+            // Create a new list of tuples combining the key with each value
+            return values.collect { value -> [key, value] }
+        }
+    */
+
+    vcfs = SPLIT_DV_VCF.out.vcfs
+        .flatMap { item ->
+            def key = item[0]
+            def values = item[1]
+            // Check if the length of values is greater than 1
+            if (values instanceof List) {
+                // Create and return a new list of tuples combining the key with each value
+                return values.collect { value -> [key, value] }
+            } else {
+                // If values has 1 or no elements, return an empty list or handle accordingly
+                return [ item ]  // Optionally, adjust this line based on your needs
+            }
+        }
+
+    CI_SPLICE_AI(vcfs, params.genome)
+
+    CONCAT_CI_SPLICE_AI_FILES( CI_SPLICE_AI.out.ci_splice_ai_vcfs.groupTuple() )
 
 }
 
@@ -611,7 +662,9 @@ workflow {
 
             if (params.genotype_cohort) {
 
-                gatk_genotype_cohort( gatk.out.vcfs, gatk.out.refs, gatk.out.contigs )
+                get_contigs(params.genome, params.target_contigs)
+
+                gatk_genotype_cohort( gatk.out.vcfs, gatk.out.refs, get_contigs.out.contigs )
                 vcfs = gatk_genotype_cohort.out.vcf_tbi
 
             } else { 

@@ -108,7 +108,14 @@ process RUN_SNPEFF {
             -onlyProtein \
             -ud 0 \
             \$db_name \
-            tmp > \$vcfbase.snpEff.vcf
+            tmp > tmp.vcf
+
+    echo -e "##fileformat=VCFv4.2" > header        
+            
+    cat header tmp.vcf > \$vcfbase.snpEff.vcf
+
+    rm header 
+    rm tmp.vcf
             
     """
 

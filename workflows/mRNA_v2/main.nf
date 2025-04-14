@@ -309,6 +309,7 @@ workflow salmon {
             salmon_build = true
         }
 
+        println salmon_index_path
         if ( salmon_build ){
             SALMON_INDEX ( params.salmon, salmon_index_path )
             salmon_idx_ch = SALMON_INDEX.out.salmon_idx_ch
@@ -374,10 +375,10 @@ workflow {
     trim( read_data_fq.out.reads )
 
     // star remove rRNA 
-    star_remove_rRNA( trim.out.fqs )
+    //star_remove_rRNA( trim.out.fqs )
 
     // star align
-    star_align( star_remove_rRNA.out.filtered_reads_ch )
+    star_align( trim.out.fqs )
     
     // star align
     //star_align( trim.out.fqs )
@@ -402,7 +403,7 @@ workflow {
      * SALMON mapping
      */
     if ( params.salmon ) {
-        salmon( trim.out.fqs,  )
+        salmon( trim.out.fqs )
     }
 
     /*

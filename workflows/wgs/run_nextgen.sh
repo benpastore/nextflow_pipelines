@@ -39,9 +39,9 @@ echo """#!/bin/bash
 
 #SBATCH --no-requeue
 #SBATCH -c 1
-#SBATCH --account=PCON0160 --ntasks-per-node=1 --time=128:00:00 --mem=2gb 
+#SBATCH --account=PCON0160 --ntasks-per-node=1 --time=128:00:00 --mem=2gb --cluster=ascend
 
-#module load java/12.0.2
+
 
 nextflow $SCRIPT_DIR/main.nf $@
 

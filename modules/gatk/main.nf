@@ -52,6 +52,31 @@ process GATK_PREPARE_GENOME {
     """
 }
 
+process GET_CONTIGS {
+
+    label 'GATK_xs'
+
+    input : 
+        val genome
+        val targets
+        val splits 
+
+    output: 
+        path("contigs.txt"), emit : contigs
+    
+    script: 
+    """
+    #!/bin/bash
+
+    cp ${genome} ./genome.fa
+
+    samtools faidx ./genome.fa
+
+    python3 ${params.bin}/get_contigs.py -fai ./genome.fa.fai -target_contigs "${targets}" -splits ${splits}
+
+    """
+}
+
 process IMPORT_GENOME_DB_CONTIGS {
 
     tag "prepare_genome"
@@ -74,31 +99,6 @@ process IMPORT_GENOME_DB_CONTIGS {
     samtools faidx ./genome.fa
 
     python3 ${params.bin}/get_contigs.py -fai ./genome.fa.fai -target_contigs "${targets}" -splits 3
-
-    """
-}
-
-process GET_CONTIGS {
-
-    label 'low'
-
-    input : 
-        val(genome)
-    
-    output: 
-        path("contigs.txt"), emit : contigs
-    
-    script: 
-    """
-    #!/bin/bash
-
-    source activate rnaseq
-
-    cp ${genome} ./genome.fa
-
-    samtools faidx ./genome.fa
-
-    python3 ${params.bin}/get_contigs.py -fai ./genome.fa.fai
 
     """
 }
@@ -276,7 +276,7 @@ process MAKE_SAMPLE_MAP {
 
 process IMPORT_GENOME_DB {
 
-    label 'WIGATK'
+    label 'WIGATK_test'
 
     errorStrategy 'retry'
     time { 5.hour * task.attempt } 
@@ -297,7 +297,7 @@ process IMPORT_GENOME_DB {
     gatk --java-options "-Xmx${task.memory.toGiga()}g -XX:ConcGCThreads=${task.cpus}" \\
         GenomicsDBImport \\
         --genomicsdb-workspace-path ${contig}.db \\
-        --batch-size 50 \\
+        --batch-size 200 \\
         -L ${contig} \\
         --sample-name-map ${sample_map} \\
         --reader-threads ${task.cpus}
@@ -307,7 +307,7 @@ process IMPORT_GENOME_DB {
 
 process GATK_GENOTYPE_COHORT {
 
-    label 'WIGATK_xl'
+    label 'WIGATK_test'
 
     tag 'genotype_cohort'
 

@@ -4,7 +4,7 @@ process DEEPVARIANT_CALL_VARIANTS {
     errorStrategy 'retry'
     maxRetries 3 
 
-    tag "${condition}_filter_merge_bam"
+    tag "${condition}_deepvariant"
 
     label 'DeepVariant'
 
@@ -40,4 +40,39 @@ process DEEPVARIANT_CALL_VARIANTS {
     gzip *vcf*
         
     """   
+}
+
+process SPLIT_DV_VCF {
+
+    tag "${condition}_filter_dv"
+
+    label 'bcftools_low'
+
+    input : 
+        tuple val(condition), val(vcf)
+
+    output : 
+        tuple val(condition), path("*.vcf.gz"), emit : vcfs
+    
+    script:
+    """
+    #!/bin/bash
+
+    zcat ${vcf} | grep "^#"  > header
+
+    zcat ${vcf} | awk '(\$7=="PASS")' > passing
+
+    cat header passing | bgzip > vcf.gz
+
+    tabix vcf.gz
+
+    chroms=\$(zcat vcf.gz | grep -v "^#" | cut -f1 | sort | uniq | grep chr)
+
+    for chrom in \$chroms; do
+        echo \$chrom
+        bcftools view -r \$chrom vcf.gz -Oz -o \${chrom}.vcf.gz
+    done
+
+    """  
+
 }
