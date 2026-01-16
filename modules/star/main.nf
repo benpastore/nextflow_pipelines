@@ -98,9 +98,7 @@ process STAR_ALIGN {
         ${outFilterMatchNminOverLread_command} \\
         ${outFilterMatchNmin_command} \\
         ${outFilterMismatchNmax_command} \\
-        ${outFilterScoreMin_command} \\
         ${outSAMunmapped_command} \\
-        ${outFilterMultimapScoreRange_command} \\
         ${alignEndsType_command} \\
         ${genomeLoad_command} \\
         ${outReadsUnmapped_command} \\
