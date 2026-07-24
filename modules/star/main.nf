@@ -39,7 +39,7 @@ process STAR_ALIGN {
     publishDir "$params.results/star_alignments/bam", mode : 'copy', pattern : '*.bam'
     publishDir "$params.results/star_alignments/bam", mode : 'copy', pattern : '*.bai'
     publishDir "$params.results/star_alignments/logs", mode : 'copy', pattern : '*Log.final.out'
-    publishDir "$params.results/star_alignments/counts", mode : 'copy', pattern : '*ReadsPerGene.out.tab'
+    //publishDir "$params.results/star_alignments/counts", mode : 'copy', pattern : '*ReadsPerGene.out.tab'
 
     input : 
         val star_idx
@@ -50,7 +50,7 @@ process STAR_ALIGN {
         tuple val(sampleID), path("${sampleID}.Aligned.sortedByCoord.out.bam"), path("${sampleID}.Aligned.sortedByCoord.out.bam.bai"), emit : star_bams_ch // path("${sampleID}.Aligned.sortedByCoord.out.bam.bai"), emit : star_bams_ch
         path("*Log.final.out")
         tuple val(sampleID), path("${sampleID}.Aligned.sortedByCoord.out.bam"), path("${sampleID}.Aligned.sortedByCoord.out.bam.bai"), emit : star_bam_bai_ch
-        path("*ReadsPerGene.out.tab")
+        //path("*ReadsPerGene.out.tab")
 
     script : 
     fastq_command = params.single_end ? "--readFilesIn ${fastq}" : "--readFilesIn ${fastq[0]} ${fastq[1]}"

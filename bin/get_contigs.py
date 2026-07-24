@@ -13,7 +13,7 @@ def get_contigs(fai, target_contigs, n_splits) :
         for line in f : 
             info = line.strip().split()
             chrom = info[0]
-            if chrom in target_contigs : 
+            if (chrom in target_contigs) or (target_contigs == "ALL") : 
                 size = int(info[1])
                 batch_size = round(size/splits)
 

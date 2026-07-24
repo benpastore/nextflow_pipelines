@@ -100,6 +100,8 @@ include { DOWNLOAD_BAM } from '../../modules/download/main.nf'
 include { PREPROCESS_SNPEFF } from '../../modules/snpeff/main.nf'
 include { CI_SPLICE_AI } from '../../modules/ci_splice_ai/main.nf'
 include { CONCAT_CI_SPLICE_AI_FILES } from '../../modules/ci_splice_ai/main.nf'
+include { STAR_INDEX } from '../../modules/star/main.nf'
+include { STAR_ALIGN } from '../../modules/star/main.nf'
 
 /*
 ////////////////////////////////////////////////////////////////////
@@ -480,6 +482,8 @@ workflow expansion_hunter {
         EXPANSION_HUNTER( data, params.genome )
 }
 
+
+
 /*
 ////////////////////////////////////////////////////////////////////
 Workflow alternative entry point snpeff
@@ -636,9 +640,13 @@ workflow {
             data = raw_dat         
         }
 
-        bwa_align( data )
-
-        bams = bwa_align.out.bams
+        if (params.input_nucleic_acid == "RNA") { 
+            star_align( data )
+            bams = star_align.out.bams
+        } else {
+            bwa_align( data )
+            bams = bwa_align.out.bams
+        }
     }
 
     if ( params.filter_bam ) { 
@@ -662,7 +670,7 @@ workflow {
 
             if (params.genotype_cohort) {
 
-                get_contigs(params.genome, params.target_contigs)
+                get_contigs( params.genome, params.target_contigs, params.genoype_cohort_splits )
 
                 gatk_genotype_cohort( gatk.out.vcfs, gatk.out.refs, get_contigs.out.contigs )
                 vcfs = gatk_genotype_cohort.out.vcf_tbi
