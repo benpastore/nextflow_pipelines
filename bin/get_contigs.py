@@ -41,10 +41,14 @@ def get_args() :
 
     return parser.parse_args()
 
-def main() : 
+def main() :
 
-    args = get_args() 
-    get_contigs(args.fai, args.target_contigs.split(" "), args.splits)
+    args = get_args()
+    if args.target_contigs.strip() == "ALL" :
+        target = "ALL"
+    else :
+        target = args.target_contigs.split(" ")
+    get_contigs(args.fai, target, args.splits)
 
 if __name__ == "__main__" : 
 
