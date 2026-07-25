@@ -158,6 +158,7 @@ process GATK_CALL_VARIANTS {
     #!/bin/bash
 
     gatk HaplotypeCaller --java-options "-Xmx${task.memory.toGiga()}g " \\
+        --native-pair-hmm-threads ${task.cpus} \\
         --emit-ref-confidence GVCF \\
         --annotation DepthPerAlleleBySample \\
         --annotation Coverage \\
@@ -209,10 +210,10 @@ process  CONCAT_STRAIN_GVCFS {
 
     #ls *_cohort_pol.vcf.gz > contig_set.vcf.gz
 
-    bcftools concat -a -Oz ${vcfs.join(' ')} > ${condition}.g.vcf.gz
+    bcftools concat -a -Oz --threads ${task.cpus} ${vcfs.join(' ')} > ${condition}.g.vcf.gz
 
     bcftools index --tbi ${condition}.g.vcf.gz
-    
+
     """
 }
 
