@@ -83,6 +83,7 @@ include { GET_CONTIGS } from '../../modules/gatk/main.nf'
 include { GATK_PREPARE_GENOME } from '../../modules/gatk/main.nf'
 include { IMPORT_GENOME_DB_CONTIGS } from '../../modules/gatk/main.nf'
 include { GATK_PROCESS_BAM } from '../../modules/gatk/main.nf'
+include { GATK_SPLIT_N_CIGAR_READS } from '../../modules/gatk/main.nf'
 include { GATK_CALL_VARIANTS } from '../../modules/gatk/main.nf'
 include { CONCAT_STRAIN_GVCFS } from '../../modules/gatk/main.nf'
 include { MAKE_SAMPLE_MAP } from '../../modules/gatk/main.nf'
@@ -314,12 +315,32 @@ workflow gatk {
 
         // get contigs: I, II, III, IV, V, X
         contigs = GATK_PREPARE_GENOME.out.contigs.splitText { it.strip() }
+        print(contigs)
 
         GATK_PROCESS_BAM( data )
 
-        variant_caller_input = GATK_PROCESS_BAM
-            .out
-            .processed_bam_ch
+        // RNA-seq reads from STAR carry spliced (N-cigar) alignments and MAPQ 255
+        // for unique mappers, which GATK's default read filters silently drop
+        // wholesale. SplitNCigarReads splits at N-cigar ops and remaps MAPQ
+        // 255 -> 60 so HaplotypeCaller actually sees the reads.
+        if ( params.input_nucleic_acid == "RNA" ) {
+
+            split_n_cigar_input = GATK_PROCESS_BAM
+                .out
+                .processed_bam_ch
+                .combine( GATK_PREPARE_GENOME.out.processed_genome )
+
+            GATK_SPLIT_N_CIGAR_READS( split_n_cigar_input )
+
+            processed_bam_ch = GATK_SPLIT_N_CIGAR_READS.out.split_bam_ch
+
+        } else {
+
+            processed_bam_ch = GATK_PROCESS_BAM.out.processed_bam_ch
+
+        }
+
+        variant_caller_input = processed_bam_ch
             .combine( contigs )
             .combine( GATK_PREPARE_GENOME.out.processed_genome )
 
@@ -671,6 +692,7 @@ workflow {
             if (params.genotype_cohort) {
 
                 get_contigs( params.genome, params.target_contigs, params.genoype_cohort_splits )
+                print(get_contigs.out.contigs)
 
                 gatk_genotype_cohort( gatk.out.vcfs, gatk.out.refs, get_contigs.out.contigs )
                 vcfs = gatk_genotype_cohort.out.vcf_tbi

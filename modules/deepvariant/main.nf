@@ -18,7 +18,7 @@ process DEEPVARIANT_CALL_VARIANTS {
         tuple val(condition), val("*.vcf.gz"), emit : deepvariant_vcf_ch
         tuple val(condition), val("*.gvcf.gz"), emit : deepvariant_gvcf_ch
         path("*")
-        path("*vcf.gz"), emit : vcf
+        path("*.dv.vcf.gz"), emit : vcf
     
     script:
     """
@@ -26,9 +26,7 @@ process DEEPVARIANT_CALL_VARIANTS {
 
     export TF_FORCE_UNIFIED_MEMORY='1'
 
-    singularity run \\
-        docker://google/deepvariant:latest \\
-        /opt/deepvariant/bin/run_deepvariant \\
+    /opt/deepvariant/bin/run_deepvariant \\
         --model_type="WGS" \\
         --ref=${genome} \\
         --reads=${bam} \\

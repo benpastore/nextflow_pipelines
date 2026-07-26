@@ -132,6 +132,33 @@ process GATK_PROCESS_BAM {
 
 }
 
+process GATK_SPLIT_N_CIGAR_READS {
+
+    tag "${condition}_split_n_cigar"
+
+    label 'GATK'
+
+    input :
+        tuple val(condition), val(bam), val(bai), val(genome_fa), val(genome_index), val(genome_dict)
+
+    output :
+        tuple val(condition), path("*.split.bam"), path("*.split.bam.bai"), emit : split_bam_ch
+
+    script :
+    """
+    #!/bin/bash
+
+    gatk SplitNCigarReads --java-options "-Xmx${task.memory.toGiga()}g" \\
+        -R ${genome_fa} \\
+        -I ${bam} \\
+        -O ${condition}.split.bam
+
+    samtools index ${condition}.split.bam
+
+    """
+
+}
+
 process GATK_CALL_VARIANTS {
 
     errorStrategy 'retry'
