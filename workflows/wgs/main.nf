@@ -103,6 +103,7 @@ include { CI_SPLICE_AI } from '../../modules/ci_splice_ai/main.nf'
 include { CONCAT_CI_SPLICE_AI_FILES } from '../../modules/ci_splice_ai/main.nf'
 include { STAR_INDEX } from '../../modules/star/main.nf'
 include { STAR_ALIGN } from '../../modules/star/main.nf'
+include { FEATURECOUNTS } from '../../modules/featurecounts/main.nf'
 
 /*
 ////////////////////////////////////////////////////////////////////
@@ -287,6 +288,18 @@ workflow bam_to_bw {
     main : 
     
         BAM_TO_BW( data )
+
+}
+
+workflow feature_counts {
+
+    take : data
+
+    main :
+        FEATURECOUNTS( data, params.gtf )
+
+    emit :
+        counts = FEATURECOUNTS.out.feature_counts_ch
 
 }
 
@@ -722,8 +735,14 @@ workflow {
 
     if (params.run_expansion_hunter) {
 
-        expansion_hunter( processed_bam )   
-    
+        expansion_hunter( processed_bam )
+
+    }
+
+    if (params.input_nucleic_acid == "RNA" && params.feature_counts) {
+
+        feature_counts( processed_bam )
+
     }
 
 }
