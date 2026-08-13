@@ -38,8 +38,8 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 echo """#!/bin/bash
 
 #SBATCH --no-requeue
-#SBATCH -c 1
-#SBATCH --account=PCON0160 --ntasks-per-node=1 --time=128:00:00 --mem=2gb 
+#SBATCH -c 4
+#SBATCH --account=PCON0160 --ntasks-per-node=1 --time=128:00:00 --mem=8gb 
 
 #module load java/12.0.2
 
